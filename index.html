@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Verification & Approval System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Modal Transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms ease-out, transform 200ms ease-out; }
+        .modal-leave { opacity: 1; transform: scale(1); }
+        .modal-leave-active { opacity: 0; transform: scale(0.95); transition: opacity 150ms ease-in, transform 150ms ease-in; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex overflow-hidden">
+
+    <!-- Login / Role Selection Overlay -->
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <i class="ph ph-file-text text-5xl text-brand-600 mb-2"></i>
+                <h1 class="text-2xl font-bold text-slate-900">Invoice Portal</h1>
+                <p class="text-slate-500 mt-2">Select your department role to simulate the workflow.</p>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="loginAs('Accounts')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i class="ph ph-calculator text-xl"></i></div>
+                        <span class="font-semibold">Accounts Dept</span>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </button>
+                <button onclick="loginAs('Purchasing')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><i class="ph ph-shopping-cart text-xl"></i></div>
+                        <span class="font-semibold">Purchasing Dept</span>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </button>
+                <button onclick="loginAs('Machinery')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-orange-100 text-orange-600 rounded-lg"><i class="ph ph-engine text-xl"></i></div>
+                        <span class="font-semibold">Machinery Dept</span>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </button>
+                <button onclick="loginAs('RelevantDepartment')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-purple-100 text-purple-600 rounded-lg"><i class="ph ph-users-three text-xl"></i></div>
+                        <div class="text-left">
+                            <span class="font-semibold block">Relevant Dept Verifiers</span>
+                            <span class="text-xs text-slate-500">Tier 1-4 Approvals</span>
+                        </div>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-400"></i>
+                </button>
+            </div>
+            <div id="authLoading" class="hidden mt-4 text-center text-sm text-brand-600 font-medium">
+                <i class="ph ph-spinner animate-spin mr-2"></i> Connecting to server...
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Layout -->
+    <div id="appContainer" class="flex w-full h-full hidden">
+        
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 bg-slate-900 text-white flex flex-col h-full shrink-0 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+                <i class="ph ph-file-text text-3xl text-brand-500"></i>
+                <span class="font-bold text-lg tracking-tight">InvoiceTrack</span>
+            </div>
+            
+            <div class="p-4 flex-1 space-y-2">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-brand-600 text-white transition-colors">
+                    <i class="ph ph-squares-four text-xl"></i>
+                    <span class="font-medium">Dashboard</span>
+                </button>
+                <button onclick="switchTab('tasks')" id="nav-tasks" class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-check-square text-xl"></i>
+                        <span class="font-medium">My Tasks</span>
+                    </div>
+                    <span id="taskCountBadge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                </button>
+                <button onclick="switchTab('upload')" id="nav-upload" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                    <i class="ph ph-upload-simple text-xl"></i>
+                    <span class="font-medium">Upload Invoice</span>
+                </button>
+            </div>
+
+            <div class="p-4 border-t border-slate-800">
+                <div class="flex items-center gap-3 mb-4 px-2">
+                    <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold">
+                        <span id="userInitial">A</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-white" id="currentRoleDisplay">Accounts</p>
+                        <p class="text-xs text-slate-400">Active Session</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm">
+                    <i class="ph ph-sign-out"></i> Switch Role
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 bg-slate-50 flex flex-col h-full overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shrink-0">
+                <h2 id="pageTitle" class="text-xl font-bold text-slate-800">Real-Time Dashboard</h2>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <i class="ph ph-bell text-2xl text-slate-400 hover:text-slate-600 cursor-pointer"></i>
+                        <span id="bellBadge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full hidden border-2 border-white"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-8 hide-scroll">
+                
+                <!-- VIEW 1: Dashboard (Real-time tracking) -->
+                <div id="view-dashboard" class="space-y-6 block">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="p-3 bg-blue-50 text-blue-600 rounded-lg"><i class="ph ph-files text-2xl"></i></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Total Invoices</p><p id="statTotal" class="text-2xl font-bold">0</p></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i class="ph ph-hourglass-high text-2xl"></i></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Pending Verification</p><p id="statPending" class="text-2xl font-bold">0</p></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i class="ph ph-check-circle text-2xl"></i></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Fully Approved</p><p id="statApproved" class="text-2xl font-bold">0</p></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="p-3 bg-red-50 text-red-600 rounded-lg"><i class="ph ph-warning-circle text-2xl"></i></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Rejected / Issues</p><p id="statRejected" class="text-2xl font-bold">0</p></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 class="font-bold text-slate-800">All Invoices Tracking</h3>
+                            <button onclick="fetchInvoices()" class="text-slate-400 hover:text-brand-600 transition-colors"><i class="ph ph-arrows-clockwise text-xl"></i></button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th class="px-6 py-4 font-semibold">INV #</th>
+                                        <th class="px-6 py-4 font-semibold">Supplier</th>
+                                        <th class="px-6 py-4 font-semibold">Type</th>
+                                        <th class="px-6 py-4 font-semibold">Current Location</th>
+                                        <th class="px-6 py-4 font-semibold">Status</th>
+                                        <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardTableBody" class="divide-y divide-slate-100">
+                                    <!-- Populated by JS -->
+                                    <tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">Loading invoices...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: Upload Invoice -->
+                <div id="view-upload" class="hidden max-w-2xl mx-auto">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                        <div class="mb-8 border-b border-slate-100 pb-4">
+                            <h3 class="text-xl font-bold text-slate-800">Digitize New Invoice</h3>
+                            <p class="text-slate-500 text-sm mt-1">Enter details to initiate the online verification workflow. The system will auto-check for duplicates.</p>
+                        </div>
+
+                        <form id="uploadForm" onsubmit="handleUploadSubmit(event)" class="space-y-6">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Number *</label>
+                                    <input type="text" id="upInvNum" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="e.g. INV-2026-001">
+                                </div>
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Supplier Name *</label>
+                                    <input type="text" id="upSupplier" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="Supplier Co.">
+                                </div>
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Type *</label>
+                                    <select id="upType" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                        <option value="Standard">Standard Purchase</option>
+                                        <option value="Motor Insurance">Motor Vehicle Insurance (Requires Machinery Dept)</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Amount ($)</label>
+                                    <input type="number" id="upAmount" step="0.01" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="0.00">
+                                </div>
+                                
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Simulate File Attachments</label>
+                                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer">
+                                        <i class="ph ph-upload-simple text-3xl text-slate-400 mb-2"></i>
+                                        <p class="text-sm text-slate-600 font-medium">Click or drag files here to upload</p>
+                                        <p class="text-xs text-slate-400 mt-1">PDF, JPG, PNG (Simulated for this prototype)</p>
+                                    </div>
+                                    <!-- Simulated hidden file tracking -->
+                                    <div class="mt-3 flex gap-2">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full"><i class="ph ph-file-pdf"></i> invoice_scan.pdf</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 flex justify-end">
+                                <button type="submit" id="btnUpload" class="bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                                    <i class="ph ph-paper-plane-right"></i> Submit & Route to Workflow
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: My Tasks -->
+                <div id="view-tasks" class="hidden">
+                    <div class="mb-6 flex justify-between items-end">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800">My Action Required</h3>
+                            <p class="text-slate-500 text-sm mt-1">Invoices pending verification by the <span id="taskRoleHighlight" class="font-bold text-brand-600"></span> department.</p>
+                        </div>
+                    </div>
+
+                    <div id="taskListContainer" class="space-y-4">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <div id="emptyTasksState" class="hidden bg-white rounded-xl border border-slate-200 border-dashed p-12 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-300 mb-4">
+                            <i class="ph ph-coffee text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-700">All caught up!</h4>
+                        <p class="text-slate-500 text-sm mt-1">You have no pending invoices to verify at the moment.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Modal / Message Box -->
+    <div id="customModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-200" id="customModalContent">
+            <div class="flex items-center gap-4 mb-4">
+                <div id="modalIcon" class="w-12 h-12 rounded-full flex items-center justify-center shrink-0"></div>
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-bold text-slate-800"></h3>
+                </div>
+            </div>
+            <p id="modalMessage" class="text-slate-600 text-sm mb-6"></p>
+            <div class="flex justify-end gap-3" id="modalActions">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Trail Drawer -->
+    <div id="auditDrawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-[55] transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div>
+                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="ph ph-clock-counter-clockwise"></i> Audit Trail</h3>
+                <p id="auditInvTitle" class="text-xs text-slate-500 mt-1">INV-XXXX</p>
+            </div>
+            <button onclick="closeAudit()" class="text-slate-400 hover:text-slate-600 bg-white rounded-full p-1 border border-slate-200"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 bg-white">
+            <div class="relative border-l-2 border-slate-100 ml-3 space-y-6" id="auditTimeline">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notifications container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-[70] space-y-2 flex flex-col items-end pointer-events-none"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        let currentRole = null;
+        let invoicesData = [];
+
+        const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://mhdwsqzmylsubfacmjmy.supabase.co';
+        const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZHdzcXpteWxzdWJmYWNtam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDY1OTgsImV4cCI6MjEwMDg4MjU5OH0.zo8fTzeEO1wDMA2yp3ZhWMGgF0cl67gSz_ZZGp6puMY';
+        const useSupabase = supabaseUrl !== 'https://YOUR_PROJECT_ID.supabase.co' && supabaseAnonKey !== 'YOUR_ANON_KEY';
+        const supabase = useSupabase ? createClient(supabaseUrl, supabaseAnonKey) : null;
+        window.supabase = supabase;
+        window.useSupabase = useSupabase;
+        window.supabaseUrl = supabaseUrl;
+        window.supabaseAnonKey = supabaseAnonKey ? 'SET' : 'EMPTY';
+        const invoicesTable = 'invoices';
+
+        const storageKey = 'flowinvoice_offline_invoices';
+
+        const offlineLoadInvoices = () => {
+            try {
+                const raw = localStorage.getItem(storageKey);
+                return raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                console.error('Load invoices failed:', err);
+                return [];
+            }
+        };
+
+        const offlineSaveInvoices = (data) => {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(data));
+            } catch (err) {
+                console.error('Save invoices failed:', err);
+            }
+        };
+
+        const saveInvoices = (data) => {
+            offlineSaveInvoices(data);
+        };
+
+        const ensureInvoiceHistory = (invoice) => ({
+            ...invoice,
+            history: Array.isArray(invoice.history) ? invoice.history : []
+        });
+
+        // Make functions globally available
+        window.loginAs = (role) => {
+            currentRole = role;
+            document.getElementById('authLoading').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('authLoading').classList.add('hidden');
+                document.getElementById('loginScreen').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    document.getElementById('currentRoleDisplay').innerText = currentRole;
+                    document.getElementById('userInitial').innerText = currentRole.charAt(0);
+                    switchTab('dashboard');
+                    fetchInvoices();
+                }, 300);
+            }, 300);
+        };
+
+        window.logout = () => {
+            currentRole = null;
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+        };
+
+        window.switchTab = (tabId) => {
+            // Update Nav UI
+            ['dashboard', 'tasks', 'upload'].forEach(id => {
+                const btn = document.getElementById(`nav-${id}`);
+                if(id === tabId) {
+                    btn.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                    btn.classList.add('bg-brand-600', 'text-white');
+                } else {
+                    btn.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                    btn.classList.remove('bg-brand-600', 'text-white');
+                }
+            });
+
+            // Update View
+            ['view-dashboard', 'view-tasks', 'view-upload'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Titles
+            const titles = { 'dashboard': 'Real-Time Dashboard', 'tasks': 'My Action Required', 'upload': 'Digitize New Invoice' };
+            document.getElementById('pageTitle').innerText = titles[tabId];
+
+            if(tabId === 'dashboard') renderDashboard();
+            if(tabId === 'tasks') renderTasks();
+        };
+
+        window.handleUploadSubmit = async (e) => {
+            e.preventDefault();
+
+            const invNum = document.getElementById('upInvNum').value.trim();
+            const supplier = document.getElementById('upSupplier').value.trim();
+            const type = document.getElementById('upType').value;
+            const amount = document.getElementById('upAmount').value;
+
+            // 1. DUPLICATE INVOICE DETECTION
+            const isDuplicate = invoicesData.some(inv => inv.invoiceNumber.toLowerCase() === invNum.toLowerCase() && inv.supplierName.toLowerCase() === supplier.toLowerCase());
+            
+            if (isDuplicate) {
+                showModal(
+                    "Duplicate Detected!", 
+                    `The system found an existing invoice (<b>${invNum}</b>) from ${supplier}. This prevents processing the emailed copy and hardcopy twice.`, 
+                    "error"
+                );
+                return;
+            }
+
+            const btn = document.getElementById('btnUpload');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Processing...`;
+            btn.disabled = true;
+
+            try {
+                // Determine initial routing based on type (Logic from Issue.pdf Exception handling)
+                let initialLocation = 'Purchasing'; 
+                let initialStatus = 'Pending PO Cross-check';
+                
+                if (type === 'Motor Insurance') {
+                    initialLocation = 'Machinery';
+                    initialStatus = 'Pending 1st Verification';
+                }
+
+                const newInvoice = {
+                    invoiceNumber: invNum,
+                    supplierName: supplier,
+                    type: type,
+                    amount: parseFloat(amount),
+                    currentLocation: initialLocation,
+                    status: initialStatus,
+                    uploadDate: new Date().toISOString(),
+                    uploadedBy: currentRole,
+                    history: [{
+                        action: 'Invoice Uploaded & Digitized',
+                        userRole: currentRole,
+                        timestamp: new Date().toISOString(),
+                        note: 'Uploaded via System'
+                    }]
+                };
+
+                newInvoice.id = crypto.randomUUID ? crypto.randomUUID() : `inv-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                if (useSupabase) {
+                    const { data, error } = await supabase
+                        .from(invoicesTable)
+                        .insert([newInvoice])
+                        .select();
+                    if (error) throw error;
+                    invoicesData.unshift(ensureInvoiceHistory(data[0]));
+                    offlineSaveInvoices(invoicesData);
+                } else {
+                    invoicesData.unshift(newInvoice);
+                    saveInvoices(invoicesData);
+                }
+
+                document.getElementById('uploadForm').reset();
+                showToast('Invoice digitized and routed successfully!', 'success');
+                switchTab('dashboard');
+                
+            } catch (err) {
+                console.error("Upload error:", err);
+                showToast("Failed to upload: " + err.message, "error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        window.processInvoice = async (id, actionType) => {
+            const inv = invoicesData.find(i => i.id === id);
+            if(!inv) return;
+
+            // Define the routing matrix
+            let newLocation = inv.currentLocation;
+            let newStatus = inv.status;
+            let actionNote = '';
+
+            if (actionType === 'approve') {
+                if (inv.currentLocation === 'Machinery') {
+                    // Motor insurance moves from Machinery -> Purchasing
+                    newLocation = 'Purchasing';
+                    newStatus = 'Pending PO Cross-check';
+                    actionNote = '1st verification completed.';
+                } else if (inv.currentLocation === 'Purchasing') {
+                    // Purchasing -> Relevant Department (Attaching PO)
+                    newLocation = 'RelevantDepartment';
+                    newStatus = 'Pending Dept Verification';
+                    actionNote = 'PO cross-checked, supporting documents attached.';
+                } else if (inv.currentLocation === 'RelevantDepartment') {
+                    // Relevant Dept (Simulating 2-4 personnel approval in one step for prototype) -> Accounts
+                    newLocation = 'Accounts';
+                    newStatus = 'Pending Final Payment';
+                    actionNote = 'Department verifications complete. Ready for payment.';
+                } else if (inv.currentLocation === 'Accounts') {
+                    // Final step
+                    newLocation = 'Completed';
+                    newStatus = 'Approved & Paid';
+                    actionNote = 'Payment processed. Workflow complete.';
+                }
+            } else if (actionType === 'reject') {
+                newLocation = 'Accounts'; // Returns to origin
+                newStatus = 'Rejected/Needs Fix';
+                actionNote = `Rejected by ${currentRole}. Please review.`;
+            }
+
+            try {
+                const newHistoryEntry = {
+                    action: actionType === 'approve' ? 'Approved & Forwarded' : 'Rejected',
+                    userRole: currentRole,
+                    timestamp: new Date().toISOString(),
+                    note: actionNote
+                };
+
+                inv.currentLocation = newLocation;
+                inv.status = newStatus;
+                inv.history = [...inv.history, newHistoryEntry];
+
+                if (useSupabase) {
+                    const { error } = await supabase
+                        .from(invoicesTable)
+                        .update({ currentLocation: newLocation, status: newStatus, history: inv.history })
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+
+                offlineSaveInvoices(invoicesData);
+                showToast(`Invoice ${actionType === 'approve' ? 'approved' : 'rejected'} successfully.`, 'success');
+
+            } catch (error) {
+                console.error("Process error:", error);
+                showToast("Error updating invoice.", "error");
+            }
+        };
+
+        function renderDashboard() {
+            const tbody = document.getElementById('dashboardTableBody');
+            tbody.innerHTML = '';
+            
+            let stats = { total: invoicesData.length, pending: 0, approved: 0, rejected: 0 };
+
+            invoicesData.sort((a,b) => new Date(b.uploadDate) - new Date(a.uploadDate)).forEach(inv => {
+                if (inv.currentLocation === 'Completed') stats.approved++;
+                else if (inv.status.includes('Rejected')) stats.rejected++;
+                else stats.pending++;
+
+                // Styling logic based on status
+                let statusClass = "bg-slate-100 text-slate-700";
+                if(inv.currentLocation === 'Completed') statusClass = "bg-emerald-100 text-emerald-700";
+                if(inv.status.includes('Rejected')) statusClass = "bg-red-100 text-red-700";
+                if(inv.currentLocation === currentRole) statusClass = "bg-brand-100 text-brand-700 font-medium ring-1 ring-brand-300";
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-mono font-medium text-slate-900">${inv.invoiceNumber}</td>
+                    <td class="px-6 py-4">${inv.supplierName}</td>
+                    <td class="px-6 py-4 text-xs"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200">${inv.type}</span></td>
+                    <td class="px-6 py-4 font-semibold text-slate-700">${inv.currentLocation}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs rounded-full ${statusClass}">${inv.status}</span></td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="openAudit('${inv.id}')" class="text-brand-600 hover:text-brand-800 text-sm font-medium hover:underline flex items-center justify-end gap-1 w-full">
+                           <i class="ph ph-clock-counter-clockwise"></i> Audit Trail
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if(invoicesData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">No invoices digitized yet. Upload one to start tracking.</td></tr>`;
+            }
+
+            document.getElementById('statTotal').innerText = stats.total;
+            document.getElementById('statPending').innerText = stats.pending;
+            document.getElementById('statApproved').innerText = stats.approved;
+            document.getElementById('statRejected').innerText = stats.rejected;
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('taskListContainer');
+            const emptyState = document.getElementById('emptyTasksState');
+            const badge = document.getElementById('taskCountBadge');
+            const bell = document.getElementById('bellBadge');
+            
+            document.getElementById('taskRoleHighlight').innerText = currentRole;
+            container.innerHTML = '';
+            
+            // Filter invoices requiring current role's action
+            const myTasks = invoicesData.filter(inv => inv.currentLocation === currentRole && inv.currentLocation !== 'Completed');
+            
+            if (myTasks.length > 0) {
+                badge.innerText = myTasks.length;
+                badge.classList.remove('hidden');
+                bell.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                myTasks.forEach(inv => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-6 rounded-xl border border-brand-200 shadow-sm relative overflow-hidden";
+                    
+                    // Specific instructions based on role
+                    let instructions = "";
+                    if(currentRole === 'Purchasing') instructions = "Action: Cross-check with original PO, verify amounts, and attach supporting DO digitally before approving.";
+                    if(currentRole === 'Machinery') instructions = "Action: Verify vehicle details and policy numbers for this insurance invoice.";
+                    if(currentRole === 'RelevantDepartment') instructions = "Action: Tiered department approval required (Simulated 2-4 personnel matrix).";
+                    if(currentRole === 'Accounts') instructions = "Action: Final verification and process payment to supplier.";
+
+                    card.innerHTML = `
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-brand-500"></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-800">${inv.invoiceNumber}</h4>
+                                <p class="text-sm text-slate-500">${inv.supplierName} &bull; $${(inv.amount || 0).toFixed(2)}</p>
+                            </div>
+                            <span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium animate-pulse border border-amber-200">${inv.status}</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-5">
+                            <p class="text-xs text-slate-600 font-medium"><i class="ph ph-info text-brand-600 mr-1"></i> ${instructions}</p>
+                            
+                            ${currentRole === 'Purchasing' ? `
+                                <div class="mt-2 pt-2 border-t border-slate-200 flex gap-2">
+                                    <button class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-paperclip"></i> Attach PO</button>
+                                    <button class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-paperclip"></i> Attach DO</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button onclick="processInvoice('${inv.id}', 'reject')" class="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors text-sm">Reject / Query</button>
+                            <button onclick="processInvoice('${inv.id}', 'approve')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors text-sm shadow-sm flex items-center gap-2">
+                                <i class="ph ph-check-circle"></i> Approve & Forward
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                badge.classList.add('hidden');
+                bell.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        window.openAudit = (id) => {
+            const inv = invoicesData.find(i => i.id === id);
+            if(!inv) return;
+
+            document.getElementById('auditInvTitle').innerText = `${inv.invoiceNumber} - ${inv.supplierName}`;
+            const tl = document.getElementById('auditTimeline');
+            tl.innerHTML = '';
+
+            // Reverse history to show newest first
+            [...inv.history].reverse().forEach((item, index) => {
+                const date = new Date(item.timestamp);
+                const isFirst = index === 0; // Most recent action
+                tl.innerHTML += `
+                    <div class="relative pl-6">
+                        <div class="absolute -left-2 top-1.5 w-4 h-4 rounded-full border-2 border-white ${isFirst ? 'bg-brand-500' : 'bg-slate-300'} z-10"></div>
+                        <div class="mb-1 flex justify-between items-center">
+                            <h5 class="text-sm font-bold text-slate-800">${item.action}</h5>
+                            <span class="text-xs text-slate-400 font-mono">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <p class="text-xs text-brand-600 font-medium mb-1"><i class="ph ph-user"></i> ${item.userRole}</p>
+                        <p class="text-xs text-slate-500">${item.note}</p>
+                        <p class="text-[10px] text-slate-400 mt-1">${date.toLocaleDateString()}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('auditDrawer').classList.remove('translate-x-full');
+        }
+
+        window.closeAudit = () => {
+            document.getElementById('auditDrawer').classList.add('translate-x-full');
+        }
+
+        window.showModal = (title, message, type = "info") => {
+            const modal = document.getElementById('customModal');
+            const content = document.getElementById('customModalContent');
+            const icon = document.getElementById('modalIcon');
+            
+            document.getElementById('modalTitle').innerHTML = title;
+            document.getElementById('modalMessage').innerHTML = message;
+
+            if (type === 'error') {
+                icon.className = "w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-red-100 text-red-600 text-2xl";
+                icon.innerHTML = "<i class='ph ph-warning-octagon'></i>";
+            } else {
+                icon.className = "w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-brand-100 text-brand-600 text-2xl";
+                icon.innerHTML = "<i class='ph ph-info'></i>";
+            }
+
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        };
+
+        window.closeModal = () => {
+            const modal = document.getElementById('customModal');
+            const content = document.getElementById('customModalContent');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 200);
+        };
+
+        window.showToast = (message, type = "info") => {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const colorClass = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-slate-800';
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'warning-circle' : 'info';
+            
+            toast.className = `${colorClass} text-white px-4 py-3 rounded-lg shadow-lg text-sm flex items-center gap-2 transform translate-x-full transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `<i class="ph ph-${icon} text-lg"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => { toast.classList.remove('translate-x-full'); }, 10);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 4000);
+        };
+
+        window.fetchInvoices = async () => {
+            if (useSupabase) {
+                const { data, error } = await supabase
+                    .from(invoicesTable)
+                    .select('*')
+                    .order('uploadDate', { ascending: false });
+
+                if (error) {
+                    console.error('Supabase fetch failed:', error);
+                    showToast('Unable to load shared invoices. Using offline cache.', 'error');
+                    invoicesData = offlineLoadInvoices();
+                } else {
+                    invoicesData = data.map(ensureInvoiceHistory);
+                    offlineSaveInvoices(invoicesData);
+                }
+            } else {
+                invoicesData = offlineLoadInvoices();
+            }
+
+            if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
+            if (!document.getElementById('view-tasks').classList.contains('hidden')) renderTasks();
+
+            const myTasks = invoicesData.filter(inv => inv.currentLocation === currentRole && inv.currentLocation !== 'Completed');
+            const badge = document.getElementById('taskCountBadge');
+            const bell = document.getElementById('bellBadge');
+            if (myTasks.length > 0) {
+                badge.innerText = myTasks.length;
+                badge.classList.remove('hidden');
+                bell.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                bell.classList.add('hidden');
+            }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!useSupabase) {
+                showToast('Supabase is not configured yet. The app will run in local offline mode only.', 'info');
+            }
+        });
+    </script>
+</body>
+</html>
