@@ -330,6 +330,60 @@
         window.supabaseAnonKey = supabaseAnonKey ? 'SET' : 'EMPTY';
         const invoicesTable = 'invoices';
 
+        const supabaseFieldMaps = [
+            {
+                db: {
+                    id: 'id',
+                    invoiceNumber: 'invoicenumber',
+                    supplierName: 'suppliername',
+                    type: 'type',
+                    amount: 'amount',
+                    currentLocation: 'currentlocation',
+                    status: 'status',
+                    uploadDate: 'uploaddate',
+                    uploadedBy: 'uploadedby',
+                    history: 'history'
+                }
+            },
+            {
+                db: {
+                    id: 'id',
+                    invoiceNumber: 'invoiceNumber',
+                    supplierName: 'supplierName',
+                    type: 'type',
+                    amount: 'amount',
+                    currentLocation: 'currentLocation',
+                    status: 'status',
+                    uploadDate: 'uploadDate',
+                    uploadedBy: 'uploadedBy',
+                    history: 'history'
+                }
+            }
+        ];
+        let activeFieldMap = supabaseFieldMaps[0];
+
+        const buildDbRow = (invoice) => {
+            return Object.fromEntries(Object.entries(activeFieldMap.db)
+                .filter(([jsKey]) => invoice[jsKey] !== undefined)
+                .map(([jsKey, dbKey]) => [dbKey, invoice[jsKey]]));
+        };
+
+        const mapFromDb = (row) => {
+            return Object.fromEntries(Object.entries(activeFieldMap.db)
+                .map(([jsKey, dbKey]) => [jsKey, row[dbKey]]));
+        };
+
+        const selectDbFields = () => Object.values(activeFieldMap.db).join(',');
+        const getDbKey = (jsKey) => activeFieldMap.db[jsKey];
+        const isMissingColumnError = (error) => {
+            if (!error) return false;
+            const msg = (error.message || '').toString().toLowerCase();
+            return msg.includes('could not find') || msg.includes('does not exist') || msg.includes('could not find the');
+        };
+        const switchFieldMap = () => {
+            activeFieldMap = activeFieldMap === supabaseFieldMaps[0] ? supabaseFieldMaps[1] : supabaseFieldMaps[0];
+        };
+
         const storageKey = 'flowinvoice_offline_invoices';
 
         const offlineLoadInvoices = () => {
@@ -464,12 +518,23 @@
 
                 newInvoice.id = crypto.randomUUID ? crypto.randomUUID() : `inv-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
                 if (useSupabase) {
-                    const { data, error } = await supabase
+                    let insertRow = buildDbRow(newInvoice);
+                    let { data, error } = await supabase
                         .from(invoicesTable)
-                        .insert([newInvoice])
+                        .insert([insertRow])
                         .select();
+
+                    if (error && isMissingColumnError(error) && activeFieldMap === supabaseFieldMaps[0]) {
+                        switchFieldMap();
+                        insertRow = buildDbRow(newInvoice);
+                        ({ data, error } = await supabase
+                            .from(invoicesTable)
+                            .insert([insertRow])
+                            .select());
+                    }
+
                     if (error) throw error;
-                    invoicesData.unshift(ensureInvoiceHistory(data[0]));
+                    invoicesData.unshift(ensureInvoiceHistory(mapFromDb(data[0])));
                     offlineSaveInvoices(invoicesData);
                 } else {
                     invoicesData.unshift(newInvoice);
@@ -539,10 +604,30 @@
                 inv.history = [...inv.history, newHistoryEntry];
 
                 if (useSupabase) {
-                    const { error } = await supabase
+                    const updateRow = {
+                        [getDbKey('currentLocation')]: newLocation,
+                        [getDbKey('status')]: newStatus,
+                        [getDbKey('history')]: inv.history
+                    };
+                    let { error } = await supabase
                         .from(invoicesTable)
-                        .update({ currentLocation: newLocation, status: newStatus, history: inv.history })
-                        .eq('id', id);
+                        .update(updateRow)
+                        .eq(getDbKey('id'), id);
+
+                    if (error && isMissingColumnError(error) && activeFieldMap === supabaseFieldMaps[0]) {
+                        switchFieldMap();
+                        const retryRow = {
+                            [getDbKey('currentLocation')]: newLocation,
+                            [getDbKey('status')]: newStatus,
+                            [getDbKey('history')]: inv.history
+                        };
+                        const retry = await supabase
+                            .from(invoicesTable)
+                            .update(retryRow)
+                            .eq(getDbKey('id'), id);
+                        error = retry.error;
+                    }
+
                     if (error) throw error;
                 }
 
@@ -750,17 +835,26 @@
 
         window.fetchInvoices = async () => {
             if (useSupabase) {
-                const { data, error } = await supabase
+                const selectedColumns = selectDbFields();
+                let { data, error } = await supabase
                     .from(invoicesTable)
-                    .select('*')
-                    .order('uploadDate', { ascending: false });
+                    .select(selectedColumns)
+                    .order(getDbKey('uploadDate'), { ascending: false });
+
+                if (error && isMissingColumnError(error) && activeFieldMap === supabaseFieldMaps[0]) {
+                    switchFieldMap();
+                    ({ data, error } = await supabase
+                        .from(invoicesTable)
+                        .select(selectDbFields())
+                        .order(getDbKey('uploadDate'), { ascending: false }));
+                }
 
                 if (error) {
                     console.error('Supabase fetch failed:', error);
                     showToast('Unable to load shared invoices. Using offline cache.', 'error');
                     invoicesData = offlineLoadInvoices();
                 } else {
-                    invoicesData = data.map(ensureInvoiceHistory);
+                    invoicesData = data.map(mapFromDb).map(ensureInvoiceHistory);
                     offlineSaveInvoices(invoicesData);
                 }
             } else {
