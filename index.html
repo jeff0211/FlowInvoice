@@ -45,47 +45,44 @@
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden">
 
-    <!-- Login / Role Selection Overlay -->
+    <!-- Login / Account Overlay -->
     <div id="loginScreen" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center transition-opacity duration-300">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[95vh] overflow-y-auto">
             <div class="text-center mb-8">
                 <i class="ph ph-file-text text-5xl text-brand-600 mb-2"></i>
                 <h1 class="text-2xl font-bold text-slate-900">Invoice Portal</h1>
-                <p class="text-slate-500 mt-2">Select your department role to simulate the workflow.</p>
+                <p class="text-slate-500 mt-2">Sign in to manage invoice verification.</p>
             </div>
-            
-            <div class="space-y-3">
-                <button onclick="loginAs('Accounts')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i class="ph ph-calculator text-xl"></i></div>
-                        <span class="font-semibold">Accounts Dept</span>
+            <div id="authLoginPanel">
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2" for="loginUsername">Username</label>
+                        <input id="loginUsername" type="text" autocomplete="username" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" placeholder="your.username">
                     </div>
-                    <i class="ph ph-caret-right text-slate-400"></i>
-                </button>
-                <button onclick="loginAs('Purchasing')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><i class="ph ph-shopping-cart text-xl"></i></div>
-                        <span class="font-semibold">Purchasing Dept</span>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2" for="loginPassword">Password</label>
+                        <input id="loginPassword" type="password" autocomplete="current-password" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" placeholder="Enter your password">
                     </div>
-                    <i class="ph ph-caret-right text-slate-400"></i>
+                    <p id="loginMessage" class="hidden text-sm text-red-600"></p>
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition-colors">
+                        <i class="ph ph-sign-in"></i> Sign in
+                    </button>
+                </form>
+                <div class="relative my-5"><div class="border-t border-slate-200"></div><span class="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-white px-3 text-xs text-slate-400">or</span></div>
+                <button type="button" onclick="loginWithOpisPro()" class="w-full flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-2.5 rounded-lg transition-colors">
+                    <i class="ph ph-buildings"></i> Continue with Opis Pro
                 </button>
-                <button onclick="loginAs('Machinery')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-orange-100 text-orange-600 rounded-lg"><i class="ph ph-engine text-xl"></i></div>
-                        <span class="font-semibold">Machinery Dept</span>
-                    </div>
-                    <i class="ph ph-caret-right text-slate-400"></i>
-                </button>
-                <button onclick="loginAs('RelevantDepartment')" class="w-full flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-purple-100 text-purple-600 rounded-lg"><i class="ph ph-users-three text-xl"></i></div>
-                        <div class="text-left">
-                            <span class="font-semibold block">Relevant Dept Verifiers</span>
-                            <span class="text-xs text-slate-500">Tier 1-4 Approvals</span>
-                        </div>
-                    </div>
-                    <i class="ph ph-caret-right text-slate-400"></i>
-                </button>
+                <button type="button" onclick="showRegisterPanel()" class="w-full mt-4 text-sm text-brand-700 hover:text-brand-900 font-medium">Create a local account</button>
+            </div>
+            <div id="authRegisterPanel" class="hidden">
+                <form onsubmit="handleRegister(event)" class="space-y-4">
+                    <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="registerUsername">Username</label><input id="registerUsername" type="text" autocomplete="username" required minlength="3" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Choose a username"></div>
+                    <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="registerPassword">Password</label><input id="registerPassword" type="password" autocomplete="new-password" required minlength="6" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="At least 6 characters"></div>
+                    <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="registerPasswordConfirm">Confirm password</label><input id="registerPasswordConfirm" type="password" autocomplete="new-password" required minlength="6" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Re-enter your password"></div>
+                    <p id="registerMessage" class="hidden text-sm text-red-600"></p>
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition-colors"><i class="ph ph-user-plus"></i> Create account</button>
+                </form>
+                <button type="button" onclick="showLoginPanel()" class="w-full mt-4 text-sm text-slate-500 hover:text-slate-800">Back to sign in</button>
             </div>
             <div id="authLoading" class="hidden mt-4 text-center text-sm text-brand-600 font-medium">
                 <i class="ph ph-spinner animate-spin mr-2"></i> Connecting to server...
@@ -127,12 +124,15 @@
                         <span id="userInitial">A</span>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-white" id="currentRoleDisplay">Accounts</p>
+                        <p class="text-sm font-medium text-white" id="currentRoleDisplay">Profile not set</p>
                         <p class="text-xs text-slate-400">Active Session</p>
                     </div>
                 </div>
+                <button onclick="openProfileSettings()" class="w-full flex items-center justify-center gap-2 px-4 py-2 mb-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm">
+                    <i class="ph ph-user-circle"></i> Profile settings
+                </button>
                 <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm">
-                    <i class="ph ph-sign-out"></i> Switch Role
+                    <i class="ph ph-sign-out"></i> Sign out
                 </button>
             </div>
         </nav>
@@ -204,7 +204,7 @@
                 <div id="view-upload" class="hidden max-w-2xl mx-auto">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                         <div class="mb-8 border-b border-slate-100 pb-4">
-                            <h3 class="text-xl font-bold text-slate-800">Digitize New Invoice</h3>
+                            <h3 class="text-xl font-bold text-slate-800">New Document</h3>
                             <p class="text-slate-500 text-sm mt-1">Enter details to initiate the online verification workflow. The system will auto-check for duplicates.</p>
                         </div>
 
@@ -229,17 +229,31 @@
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Amount ($)</label>
                                     <input type="number" id="upAmount" step="0.01" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="0.00">
                                 </div>
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">PO Number *</label>
+                                    <input type="text" id="upPoNumber" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="e.g. PO-2026-001">
+                                </div>
                                 
                                 <div class="col-span-2">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Simulate File Attachments</label>
-                                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer">
-                                        <i class="ph ph-upload-simple text-3xl text-slate-400 mb-2"></i>
-                                        <p class="text-sm text-slate-600 font-medium">Click or drag files here to upload</p>
-                                        <p class="text-xs text-slate-400 mt-1">PDF, JPG, PNG (Simulated for this prototype)</p>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Document *</label>
+                                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors">
+                                        <i class="ph ph-file-arrow-up text-3xl text-slate-400 mb-2"></i>
+                                        <p class="text-sm text-slate-600 font-medium">Choose how to add the invoice document</p>
+                                        <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
+                                            <button type="button" onclick="chooseInvoiceFile('browse')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors">
+                                                <i class="ph ph-folder-open"></i> Browse local file
+                                            </button>
+                                            <button type="button" onclick="chooseInvoiceFile('camera')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium rounded-lg transition-colors">
+                                                <i class="ph ph-camera"></i> Take a picture
+                                            </button>
+                                        </div>
+                                        <input type="file" id="invoiceFileInput" accept=".pdf,image/jpeg,image/png" class="hidden" onchange="handleInvoiceFile(event, 'browse')">
+                                        <input type="file" id="invoiceCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleInvoiceFile(event, 'camera')">
+                                        <p class="text-xs text-slate-400 mt-3">PDF, JPG, or PNG up to 10 MB</p>
                                     </div>
-                                    <!-- Simulated hidden file tracking -->
-                                    <div class="mt-3 flex gap-2">
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full"><i class="ph ph-file-pdf"></i> invoice_scan.pdf</span>
+                                    <div id="selectedInvoiceFile" class="mt-3 hidden items-center justify-between gap-2 px-3 py-2 bg-slate-100 text-slate-600 text-sm rounded-lg">
+                                        <span class="inline-flex items-center gap-2 min-w-0"><i id="selectedFileIcon" class="ph ph-file"></i><span id="selectedFileName" class="truncate"></span></span>
+                                        <button type="button" onclick="clearInvoiceFile()" class="text-slate-400 hover:text-red-600" aria-label="Remove selected invoice document"><i class="ph ph-x"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -295,6 +309,22 @@
         </div>
     </div>
 
+    <!-- Profile Settings -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[60] flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-5">
+                <div><h3 class="text-lg font-bold text-slate-800">Profile settings</h3><p class="text-sm text-slate-500 mt-1">Set the details used for verification.</p></div>
+                <button onclick="closeProfileSettings()" class="text-slate-400 hover:text-slate-700" aria-label="Close profile settings"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <form onsubmit="saveProfile(event)" class="space-y-4">
+                <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileName">Name</label><input id="profileName" type="text" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Your full name"></div>
+                <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileDepartment">Department</label><select id="profileDepartment" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"><option value="">Select department</option><option value="Accounts">Accounts</option><option value="Purchasing">Purchasing</option><option value="Machinery">Machinery</option><option value="Operations">Operations</option></select></div>
+                <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileRole">Role</label><select id="profileRole" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"><option value="">Select role</option><option>Accounts Officer</option><option>Purchasing Officer</option><option>Machinery Officer</option><option>Operations Manager</option><option>Department Verifier</option><option>Invoice Approver</option></select></div>
+                <div class="flex justify-end gap-3 pt-2"><button type="button" onclick="closeProfileSettings()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button><button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg">Save profile</button></div>
+            </form>
+        </div>
+    </div>
+
     <!-- Audit Trail Drawer -->
     <div id="auditDrawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-[55] transform translate-x-full transition-transform duration-300 flex flex-col">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -319,6 +349,8 @@
 
         let currentRole = null;
         let invoicesData = [];
+        let selectedInvoiceFile = null;
+        let currentUser = null;
 
         const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://mhdwsqzmylsubfacmjmy.supabase.co';
         const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZHdzcXpteWxzdWJmYWNtam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDY1OTgsImV4cCI6MjEwMDg4MjU5OH0.zo8fTzeEO1wDMA2yp3ZhWMGgF0cl67gSz_ZZGp6puMY';
@@ -413,9 +445,30 @@
             history: Array.isArray(invoice.history) ? invoice.history : []
         });
 
-        // Make functions globally available
-        window.loginAs = (role) => {
-            currentRole = role;
+        const accountsStorageKey = 'flowinvoice_local_accounts';
+        const activeUserStorageKey = 'flowinvoice_active_user';
+
+        const loadLocalAccounts = () => {
+            try { return JSON.parse(localStorage.getItem(accountsStorageKey) || '[]'); }
+            catch (error) { return []; }
+        };
+
+        const saveLocalAccounts = (accounts) => localStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
+
+        const workflowRoleForDepartment = (department) => department === 'Operations' ? 'RelevantDepartment' : department;
+
+        const showAuthMessage = (id, message) => {
+            const element = document.getElementById(id);
+            element.innerText = message;
+            element.classList.remove('hidden');
+        };
+
+        const hideAuthMessage = (id) => document.getElementById(id).classList.add('hidden');
+
+        const finishLogin = (account) => {
+            currentUser = account;
+            currentRole = workflowRoleForDepartment(account.profile?.department);
+            localStorage.setItem(activeUserStorageKey, account.username);
             document.getElementById('authLoading').classList.remove('hidden');
             setTimeout(() => {
                 document.getElementById('authLoading').classList.add('hidden');
@@ -423,18 +476,102 @@
                 setTimeout(() => {
                     document.getElementById('loginScreen').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
-                    document.getElementById('currentRoleDisplay').innerText = currentRole;
-                    document.getElementById('userInitial').innerText = currentRole.charAt(0);
+                    updateUserDisplay();
                     switchTab('dashboard');
                     fetchInvoices();
+                    if (!account.profile?.name || !account.profile?.department || !account.profile?.role) openProfileSettings();
                 }, 300);
             }, 300);
         };
 
+        const updateUserDisplay = () => {
+            const profile = currentUser?.profile || {};
+            const displayName = profile.name || currentUser?.username || 'User';
+            document.getElementById('currentRoleDisplay').innerText = profile.role ? `${displayName} - ${profile.role}` : displayName;
+            document.getElementById('userInitial').innerText = displayName.charAt(0).toUpperCase();
+        };
+
+        // Local account storage is a prototype until the identity service is connected.
+        window.handleLogin = (event) => {
+            event.preventDefault();
+            hideAuthMessage('loginMessage');
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const account = loadLocalAccounts().find(item => item.username.toLowerCase() === username.toLowerCase() && item.password === password);
+            if (!account) {
+                showAuthMessage('loginMessage', 'Username or password is incorrect.');
+                return;
+            }
+            finishLogin(account);
+        };
+
+        window.handleRegister = (event) => {
+            event.preventDefault();
+            hideAuthMessage('registerMessage');
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmation = document.getElementById('registerPasswordConfirm').value;
+            const accounts = loadLocalAccounts();
+            if (accounts.some(item => item.username.toLowerCase() === username.toLowerCase())) {
+                showAuthMessage('registerMessage', 'That username is already registered.');
+                return;
+            }
+            if (password !== confirmation) {
+                showAuthMessage('registerMessage', 'Passwords do not match.');
+                return;
+            }
+            const account = { username, password, profile: {} };
+            accounts.push(account);
+            saveLocalAccounts(accounts);
+            finishLogin(account);
+        };
+
+        window.showRegisterPanel = () => {
+            document.getElementById('authLoginPanel').classList.add('hidden');
+            document.getElementById('authRegisterPanel').classList.remove('hidden');
+        };
+
+        window.showLoginPanel = () => {
+            document.getElementById('authRegisterPanel').classList.add('hidden');
+            document.getElementById('authLoginPanel').classList.remove('hidden');
+        };
+
+        window.loginWithOpisPro = () => showModal('Opis Pro login', 'Opis Pro single sign-on will be connected here in a future integration.', 'info');
+
+        window.openProfileSettings = () => {
+            const profile = currentUser?.profile || {};
+            document.getElementById('profileName').value = profile.name || '';
+            document.getElementById('profileDepartment').value = profile.department || '';
+            document.getElementById('profileRole').value = profile.role || '';
+            document.getElementById('profileModal').classList.remove('hidden');
+        };
+
+        window.closeProfileSettings = () => document.getElementById('profileModal').classList.add('hidden');
+
+        window.saveProfile = (event) => {
+            event.preventDefault();
+            currentUser.profile = {
+                name: document.getElementById('profileName').value.trim(),
+                department: document.getElementById('profileDepartment').value,
+                role: document.getElementById('profileRole').value
+            };
+            const accounts = loadLocalAccounts().map(account => account.username === currentUser.username ? currentUser : account);
+            saveLocalAccounts(accounts);
+            currentRole = workflowRoleForDepartment(currentUser.profile.department);
+            updateUserDisplay();
+            closeProfileSettings();
+            renderDashboard();
+            showToast('Profile saved successfully.', 'success');
+        };
+
         window.logout = () => {
             currentRole = null;
+            currentUser = null;
+            localStorage.removeItem(activeUserStorageKey);
             document.getElementById('appContainer').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+            document.getElementById('loginPassword').value = '';
+            showLoginPanel();
         };
 
         window.switchTab = (tabId) => {
@@ -464,6 +601,43 @@
             if(tabId === 'tasks') renderTasks();
         };
 
+        window.chooseInvoiceFile = (source) => {
+            const inputId = source === 'camera' ? 'invoiceCameraInput' : 'invoiceFileInput';
+            document.getElementById(inputId).click();
+        };
+
+        window.handleInvoiceFile = (event, source) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Please choose a PDF, JPG, or PNG invoice.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('The invoice document must be 10 MB or smaller.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            selectedInvoiceFile = { name: file.name, type: file.type, source };
+            document.getElementById('selectedFileName').innerText = file.name;
+            document.getElementById('selectedFileIcon').className = file.type === 'application/pdf' ? 'ph ph-file-pdf' : 'ph ph-file-image';
+            document.getElementById('selectedInvoiceFile').classList.remove('hidden');
+            document.getElementById('selectedInvoiceFile').classList.add('flex');
+        };
+
+        window.clearInvoiceFile = () => {
+            selectedInvoiceFile = null;
+            document.getElementById('invoiceFileInput').value = '';
+            document.getElementById('invoiceCameraInput').value = '';
+            document.getElementById('selectedInvoiceFile').classList.add('hidden');
+            document.getElementById('selectedInvoiceFile').classList.remove('flex');
+        };
+
         window.handleUploadSubmit = async (e) => {
             e.preventDefault();
 
@@ -471,6 +645,12 @@
             const supplier = document.getElementById('upSupplier').value.trim();
             const type = document.getElementById('upType').value;
             const amount = document.getElementById('upAmount').value;
+            const poNumber = document.getElementById('upPoNumber').value.trim();
+
+            if (!selectedInvoiceFile) {
+                showToast('Please browse for an invoice file or take a picture first.', 'error');
+                return;
+            }
 
             // 1. DUPLICATE INVOICE DETECTION
             const isDuplicate = invoicesData.some(inv => inv.invoiceNumber.toLowerCase() === invNum.toLowerCase() && inv.supplierName.toLowerCase() === supplier.toLowerCase());
@@ -504,6 +684,9 @@
                     supplierName: supplier,
                     type: type,
                     amount: parseFloat(amount),
+                    poNumber,
+                    attachmentName: selectedInvoiceFile.name,
+                    attachmentSource: selectedInvoiceFile.source,
                     currentLocation: initialLocation,
                     status: initialStatus,
                     uploadDate: new Date().toISOString(),
@@ -512,7 +695,7 @@
                         action: 'Invoice Uploaded & Digitized',
                         userRole: currentRole,
                         timestamp: new Date().toISOString(),
-                        note: 'Uploaded via System'
+                        note: `PO ${poNumber} - ${selectedInvoiceFile.name} (${selectedInvoiceFile.source === 'camera' ? 'camera capture' : 'local file'})`
                     }]
                 };
 
@@ -542,6 +725,7 @@
                 }
 
                 document.getElementById('uploadForm').reset();
+                clearInvoiceFile();
                 showToast('Invoice digitized and routed successfully!', 'success');
                 switchTab('dashboard');
                 
