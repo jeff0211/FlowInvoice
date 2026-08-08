@@ -158,11 +158,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-blue-50 text-blue-600 rounded-lg"><i class="ph ph-files text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">Total Invoices</p><p id="statTotal" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Purchase Orders</p><p id="statTotal" class="text-2xl font-bold">0</p></div>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i class="ph ph-hourglass-high text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">Pending Verification</p><p id="statPending" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Attached Documents</p><p id="statPending" class="text-2xl font-bold">0</p></div>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i class="ph ph-check-circle text-2xl"></i></div>
@@ -176,24 +176,24 @@
 
                     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                            <h3 class="font-bold text-slate-800">All Invoices Tracking</h3>
+                            <h3 class="font-bold text-slate-800">Purchase Order Document Tracking</h3>
                             <button onclick="fetchInvoices()" class="text-slate-400 hover:text-brand-600 transition-colors"><i class="ph ph-arrows-clockwise text-xl"></i></button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th class="px-6 py-4 font-semibold">INV #</th>
+                                        <th class="px-6 py-4 font-semibold">PO Number</th>
                                         <th class="px-6 py-4 font-semibold">Supplier</th>
-                                        <th class="px-6 py-4 font-semibold">Type</th>
-                                        <th class="px-6 py-4 font-semibold">Current Location</th>
+                                        <th class="px-6 py-4 font-semibold">Attached Documents</th>
+                                        <th class="px-6 py-4 font-semibold">Total Amount</th>
                                         <th class="px-6 py-4 font-semibold">Status</th>
                                         <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="dashboardTableBody" class="divide-y divide-slate-100">
                                     <!-- Populated by JS -->
-                                    <tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">Loading invoices...</td></tr>
+                                    <tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">Loading purchase orders...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -205,40 +205,42 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                         <div class="mb-8 border-b border-slate-100 pb-4">
                             <h3 class="text-xl font-bold text-slate-800">New Document</h3>
-                            <p class="text-slate-500 text-sm mt-1">Enter details to initiate the online verification workflow. The system will auto-check for duplicates.</p>
+                            <p class="text-slate-500 text-sm mt-1">Add a document and attach it to the relevant purchase order.</p>
                         </div>
 
                         <form id="uploadForm" onsubmit="handleUploadSubmit(event)" class="space-y-6">
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="col-span-2 md:col-span-1">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Number *</label>
-                                    <input type="text" id="upInvNum" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="e.g. INV-2026-001">
-                                </div>
-                                <div class="col-span-2 md:col-span-1">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Supplier Name *</label>
-                                    <input type="text" id="upSupplier" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="Supplier Co.">
-                                </div>
-                                <div class="col-span-2 md:col-span-1">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Type *</label>
-                                    <select id="upType" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                                        <option value="Standard">Standard Purchase</option>
-                                        <option value="Motor Insurance">Motor Vehicle Insurance (Requires Machinery Dept)</option>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Document Type *</label>
+                                    <select id="upType" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                        <option value="Invoice">Invoice</option>
+                                        <option value="Delivery Order">Delivery Order</option>
+                                        <option value="Others">Others</option>
                                     </select>
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Amount ($)</label>
-                                    <input type="number" id="upAmount" step="0.01" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="0.00">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Document No. *</label>
+                                    <input type="text" id="upInvNum" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="e.g. INV-2026-001">
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">PO Number *</label>
-                                    <input type="text" id="upPoNumber" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="e.g. PO-2026-001">
+                                    <select id="upPoNumber" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                        <option value="">Select PO number</option>
+                                        <option value="PO2026001">PO2026001</option>
+                                        <option value="PO2026002">PO2026002</option>
+                                        <option value="PO2026003">PO2026003</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Amount (RM) *</label>
+                                    <input type="number" id="upAmount" min="0" step="0.01" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="0.00">
                                 </div>
                                 
                                 <div class="col-span-2">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Document *</label>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Document File *</label>
                                     <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors">
                                         <i class="ph ph-file-arrow-up text-3xl text-slate-400 mb-2"></i>
-                                        <p class="text-sm text-slate-600 font-medium">Choose how to add the invoice document</p>
+                                        <p class="text-sm text-slate-600 font-medium">Choose how to add the document</p>
                                         <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
                                             <button type="button" onclick="chooseInvoiceFile('browse')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors">
                                                 <i class="ph ph-folder-open"></i> Browse local file
@@ -318,8 +320,32 @@
             </div>
             <form onsubmit="saveProfile(event)" class="space-y-4">
                 <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileName">Name</label><input id="profileName" type="text" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Your full name"></div>
-                <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileDepartment">Department</label><select id="profileDepartment" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"><option value="">Select department</option><option value="Accounts">Accounts</option><option value="Purchasing">Purchasing</option><option value="Machinery">Machinery</option><option value="Operations">Operations</option></select></div>
-                <div><label class="block text-sm font-semibold text-slate-700 mb-2" for="profileRole">Role</label><select id="profileRole" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"><option value="">Select role</option><option>Accounts Officer</option><option>Purchasing Officer</option><option>Machinery Officer</option><option>Operations Manager</option><option>Department Verifier</option><option>Invoice Approver</option></select></div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="profileDepartment">Department</label>
+                    <select id="profileDepartment" required onchange="toggleCustomProfileFields()" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">Select department</option>
+                        <option value="Account">Account</option>
+                        <option value="Purchasing">Purchasing</option>
+                        <option value="Machinery">Machinery</option>
+                        <option value="Operation">Operation</option>
+                        <option value="Others">Others</option>
+                    </select>
+                    <input id="profileDepartmentOther" type="text" class="hidden w-full mt-2 px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Type your department">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="profileRole">Role</label>
+                    <select id="profileRole" required onchange="toggleCustomProfileFields()" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">Select role</option>
+                        <option>Account Executive</option>
+                        <option>Purchasing Executive</option>
+                        <option>Project Engineer</option>
+                        <option>Supervisor</option>
+                        <option>Manager</option>
+                        <option>Director</option>
+                        <option>Others</option>
+                    </select>
+                    <input id="profileRoleOther" type="text" class="hidden w-full mt-2 px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" placeholder="Type your role">
+                </div>
                 <div class="flex justify-end gap-3 pt-2"><button type="button" onclick="closeProfileSettings()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button><button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg">Save profile</button></div>
             </form>
         </div>
@@ -455,7 +481,23 @@
 
         const saveLocalAccounts = (accounts) => localStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
 
-        const workflowRoleForDepartment = (department) => department === 'Operations' ? 'RelevantDepartment' : department;
+        const workflowRoleForDepartment = (department) => {
+            if (department === 'Account' || department === 'Accounts') return 'Accounts';
+            if (department === 'Operation' || department === 'Operations') return 'RelevantDepartment';
+            return department;
+        };
+
+        window.toggleCustomProfileFields = () => {
+            const departmentIsOther = document.getElementById('profileDepartment').value === 'Others';
+            const roleIsOther = document.getElementById('profileRole').value === 'Others';
+            const departmentOther = document.getElementById('profileDepartmentOther');
+            const roleOther = document.getElementById('profileRoleOther');
+
+            departmentOther.classList.toggle('hidden', !departmentIsOther);
+            departmentOther.required = departmentIsOther;
+            roleOther.classList.toggle('hidden', !roleIsOther);
+            roleOther.required = roleIsOther;
+        };
 
         const showAuthMessage = (id, message) => {
             const element = document.getElementById(id);
@@ -487,7 +529,7 @@
         const updateUserDisplay = () => {
             const profile = currentUser?.profile || {};
             const displayName = profile.name || currentUser?.username || 'User';
-            document.getElementById('currentRoleDisplay').innerText = profile.role ? `${displayName} - ${profile.role}` : displayName;
+            document.getElementById('currentRoleDisplay').innerText = displayName;
             document.getElementById('userInitial').innerText = displayName.charAt(0).toUpperCase();
         };
 
@@ -540,9 +582,17 @@
 
         window.openProfileSettings = () => {
             const profile = currentUser?.profile || {};
+            const departmentOptions = ['Account', 'Purchasing', 'Machinery', 'Operation'];
+            const roleOptions = ['Account Executive', 'Purchasing Executive', 'Project Engineer', 'Supervisor', 'Manager', 'Director'];
+            const savedDepartment = profile.department === 'Accounts' ? 'Account' : profile.department === 'Operations' ? 'Operation' : profile.department || '';
+            const savedRole = profile.role || '';
+
             document.getElementById('profileName').value = profile.name || '';
-            document.getElementById('profileDepartment').value = profile.department || '';
-            document.getElementById('profileRole').value = profile.role || '';
+            document.getElementById('profileDepartment').value = departmentOptions.includes(savedDepartment) ? savedDepartment : savedDepartment ? 'Others' : '';
+            document.getElementById('profileDepartmentOther').value = departmentOptions.includes(savedDepartment) ? '' : savedDepartment;
+            document.getElementById('profileRole').value = roleOptions.includes(savedRole) ? savedRole : savedRole ? 'Others' : '';
+            document.getElementById('profileRoleOther').value = roleOptions.includes(savedRole) ? '' : savedRole;
+            toggleCustomProfileFields();
             document.getElementById('profileModal').classList.remove('hidden');
         };
 
@@ -550,10 +600,12 @@
 
         window.saveProfile = (event) => {
             event.preventDefault();
+            const departmentSelection = document.getElementById('profileDepartment').value;
+            const roleSelection = document.getElementById('profileRole').value;
             currentUser.profile = {
                 name: document.getElementById('profileName').value.trim(),
-                department: document.getElementById('profileDepartment').value,
-                role: document.getElementById('profileRole').value
+                department: departmentSelection === 'Others' ? document.getElementById('profileDepartmentOther').value.trim() : departmentSelection,
+                role: roleSelection === 'Others' ? document.getElementById('profileRoleOther').value.trim() : roleSelection
             };
             const accounts = loadLocalAccounts().map(account => account.username === currentUser.username ? currentUser : account);
             saveLocalAccounts(accounts);
@@ -623,7 +675,14 @@
                 return;
             }
 
-            selectedInvoiceFile = { name: file.name, type: file.type, source };
+            const selectedFile = { name: file.name, type: file.type, source, dataUrl: null };
+            selectedFile.ready = new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => { selectedFile.dataUrl = reader.result; resolve(); };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            selectedInvoiceFile = selectedFile;
             document.getElementById('selectedFileName').innerText = file.name;
             document.getElementById('selectedFileIcon').className = file.type === 'application/pdf' ? 'ph ph-file-pdf' : 'ph ph-file-image';
             document.getElementById('selectedInvoiceFile').classList.remove('hidden');
@@ -642,7 +701,6 @@
             e.preventDefault();
 
             const invNum = document.getElementById('upInvNum').value.trim();
-            const supplier = document.getElementById('upSupplier').value.trim();
             const type = document.getElementById('upType').value;
             const amount = document.getElementById('upAmount').value;
             const poNumber = document.getElementById('upPoNumber').value.trim();
@@ -652,13 +710,17 @@
                 return;
             }
 
-            // 1. DUPLICATE INVOICE DETECTION
-            const isDuplicate = invoicesData.some(inv => inv.invoiceNumber.toLowerCase() === invNum.toLowerCase() && inv.supplierName.toLowerCase() === supplier.toLowerCase());
+            // A document number must be unique within its PO and document type.
+            const isDuplicate = invoicesData.some(inv =>
+                inv.poNumber?.toLowerCase() === poNumber.toLowerCase() &&
+                inv.type?.toLowerCase() === type.toLowerCase() &&
+                inv.invoiceNumber?.toLowerCase() === invNum.toLowerCase()
+            );
             
             if (isDuplicate) {
                 showModal(
                     "Duplicate Detected!", 
-                    `The system found an existing invoice (<b>${invNum}</b>) from ${supplier}. This prevents processing the emailed copy and hardcopy twice.`, 
+                    `The system found an existing ${type.toLowerCase()} (<b>${invNum}</b>) already attached to ${poNumber}.`, 
                     "error"
                 );
                 return;
@@ -670,32 +732,25 @@
             btn.disabled = true;
 
             try {
-                // Determine initial routing based on type (Logic from Issue.pdf Exception handling)
-                let initialLocation = 'Purchasing'; 
-                let initialStatus = 'Pending PO Cross-check';
-                
-                if (type === 'Motor Insurance') {
-                    initialLocation = 'Machinery';
-                    initialStatus = 'Pending 1st Verification';
-                }
-
+                await selectedInvoiceFile.ready;
                 const newInvoice = {
                     invoiceNumber: invNum,
-                    supplierName: supplier,
+                    supplierName: 'PO system pending',
                     type: type,
                     amount: parseFloat(amount),
                     poNumber,
                     attachmentName: selectedInvoiceFile.name,
                     attachmentSource: selectedInvoiceFile.source,
-                    currentLocation: initialLocation,
-                    status: initialStatus,
+                    attachmentDataUrl: selectedInvoiceFile.dataUrl,
+                    currentLocation: 'Purchasing',
+                    status: 'Pending PO Cross-check',
                     uploadDate: new Date().toISOString(),
                     uploadedBy: currentRole,
                     history: [{
-                        action: 'Invoice Uploaded & Digitized',
+                            action: 'Document Uploaded & Digitized',
                         userRole: currentRole,
                         timestamp: new Date().toISOString(),
-                        note: `PO ${poNumber} - ${selectedInvoiceFile.name} (${selectedInvoiceFile.source === 'camera' ? 'camera capture' : 'local file'})`
+                            note: `PO ${poNumber} - ${selectedInvoiceFile.name} (${selectedInvoiceFile.source === 'camera' ? 'camera capture' : 'local file'})`
                     }]
                 };
 
@@ -717,7 +772,7 @@
                     }
 
                     if (error) throw error;
-                    invoicesData.unshift(ensureInvoiceHistory(mapFromDb(data[0])));
+                    invoicesData.unshift({ ...newInvoice, ...ensureInvoiceHistory(mapFromDb(data[0])) });
                     offlineSaveInvoices(invoicesData);
                 } else {
                     invoicesData.unshift(newInvoice);
@@ -824,47 +879,57 @@
             }
         };
 
+        window.previewDocument = (id) => {
+            const documentItem = invoicesData.find(item => item.id === id);
+            if (!documentItem?.attachmentDataUrl) {
+                showToast('Preview is unavailable for this document.', 'error');
+                return;
+            }
+            window.open(documentItem.attachmentDataUrl, '_blank', 'noopener,noreferrer');
+        };
+
         function renderDashboard() {
             const tbody = document.getElementById('dashboardTableBody');
-            tbody.innerHTML = '';
-            
-            let stats = { total: invoicesData.length, pending: 0, approved: 0, rejected: 0 };
-
-            invoicesData.sort((a,b) => new Date(b.uploadDate) - new Date(a.uploadDate)).forEach(inv => {
-                if (inv.currentLocation === 'Completed') stats.approved++;
-                else if (inv.status.includes('Rejected')) stats.rejected++;
-                else stats.pending++;
-
-                // Styling logic based on status
-                let statusClass = "bg-slate-100 text-slate-700";
-                if(inv.currentLocation === 'Completed') statusClass = "bg-emerald-100 text-emerald-700";
-                if(inv.status.includes('Rejected')) statusClass = "bg-red-100 text-red-700";
-                if(inv.currentLocation === currentRole) statusClass = "bg-brand-100 text-brand-700 font-medium ring-1 ring-brand-300";
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono font-medium text-slate-900">${inv.invoiceNumber}</td>
-                    <td class="px-6 py-4">${inv.supplierName}</td>
-                    <td class="px-6 py-4 text-xs"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200">${inv.type}</span></td>
-                    <td class="px-6 py-4 font-semibold text-slate-700">${inv.currentLocation}</td>
-                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs rounded-full ${statusClass}">${inv.status}</span></td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="openAudit('${inv.id}')" class="text-brand-600 hover:text-brand-800 text-sm font-medium hover:underline flex items-center justify-end gap-1 w-full">
-                           <i class="ph ph-clock-counter-clockwise"></i> Audit Trail
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            const poGroups = new Map(['PO2026001', 'PO2026002', 'PO2026003'].map(poNumber => [poNumber, []]));
+            invoicesData.forEach(documentItem => {
+                const poNumber = documentItem.poNumber || 'Unlinked';
+                if (!poGroups.has(poNumber)) poGroups.set(poNumber, []);
+                poGroups.get(poNumber).push(documentItem);
             });
 
-            if(invoicesData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">No invoices digitized yet. Upload one to start tracking.</td></tr>`;
-            }
+            const groups = [...poGroups.entries()];
+            const totalDocuments = invoicesData.length;
+            const approvedDocuments = invoicesData.filter(item => item.currentLocation === 'Completed').length;
+            const rejectedDocuments = invoicesData.filter(item => item.status?.includes('Rejected')).length;
+            const documentRows = groups.map(([poNumber, documents]) => {
+                const amount = documents.reduce((total, item) => total + (Number(item.amount) || 0), 0);
+                const supplier = documents.find(item => item.supplierName && item.supplierName !== 'PO system pending')?.supplierName || 'Supplier data pending';
+                const statuses = [...new Set(documents.map(item => item.status).filter(Boolean))];
+                const status = statuses.length ? statuses.join(', ') : 'No documents attached';
+                const statusClass = documents.some(item => item.status?.includes('Rejected'))
+                    ? 'bg-red-100 text-red-700'
+                    : documents.length && documents.every(item => item.currentLocation === 'Completed')
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-amber-100 text-amber-700';
+                const attachedDocuments = documents.length
+                    ? documents.map(item => `<div class="flex items-center gap-2 mb-1 last:mb-0"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200 text-xs">${item.type}</span><span class="text-xs text-slate-600">${item.invoiceNumber}</span><button onclick="previewDocument('${item.id}')" class="text-brand-600 hover:text-brand-800 text-xs font-medium" ${item.attachmentDataUrl ? '' : 'disabled'}><i class="ph ph-eye"></i> Preview</button></div>`).join('')
+                    : '<span class="text-sm text-slate-400">None yet</span>';
 
-            document.getElementById('statTotal').innerText = stats.total;
-            document.getElementById('statPending').innerText = stats.pending;
-            document.getElementById('statApproved').innerText = stats.approved;
-            document.getElementById('statRejected').innerText = stats.rejected;
+                return `<tr>
+                    <td class="px-6 py-4 font-mono font-medium text-slate-900">${poNumber}</td>
+                    <td class="px-6 py-4 text-slate-600">${supplier}</td>
+                    <td class="px-6 py-4">${attachedDocuments}</td>
+                    <td class="px-6 py-4 font-semibold text-slate-700">RM ${amount.toFixed(2)}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs rounded-full ${statusClass}">${status}</span></td>
+                    <td class="px-6 py-4 text-right"><button onclick="${documents[0] ? `openAudit('${documents[0].id}')` : `showToast('No audit trail yet.', 'info')`}" class="text-brand-600 hover:text-brand-800 text-sm font-medium hover:underline"><i class="ph ph-clock-counter-clockwise"></i> Audit Trail</button></td>
+                </tr>`;
+            }).join('');
+
+            tbody.innerHTML = documentRows || '<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">No purchase orders available.</td></tr>';
+            document.getElementById('statTotal').innerText = groups.length;
+            document.getElementById('statPending').innerText = totalDocuments;
+            document.getElementById('statApproved').innerText = approvedDocuments;
+            document.getElementById('statRejected').innerText = rejectedDocuments;
         }
 
         function renderTasks() {
@@ -1038,7 +1103,11 @@
                     showToast('Unable to load shared invoices. Using offline cache.', 'error');
                     invoicesData = offlineLoadInvoices();
                 } else {
-                    invoicesData = data.map(mapFromDb).map(ensureInvoiceHistory);
+                    const cachedInvoices = offlineLoadInvoices();
+                    invoicesData = data.map(mapFromDb).map(ensureInvoiceHistory).map(item => {
+                        const cachedItem = cachedInvoices.find(cached => cached.id === item.id) || {};
+                        return { ...cachedItem, ...item };
+                    });
                     offlineSaveInvoices(invoicesData);
                 }
             } else {
