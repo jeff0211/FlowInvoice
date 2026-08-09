@@ -564,7 +564,7 @@
             const requiredDepartments = [...new Set(invoiceItems.flatMap(item => item.verificationDepartments || []))];
             const approvals = new Map();
             invoiceItems.flatMap(item => Array.isArray(item.history) ? item.history : [])
-                .filter(item => item.action === 'Approved & Forwarded' && item.documentType === 'Invoice')
+                .filter(item => (item.action === 'Approved' || item.action === 'Approved & Forwarded') && item.documentType === 'Invoice')
                 .forEach(item => {
                     const department = displayDepartmentForRole(item.userDepartment || item.userRole);
                     if (department && !approvals.has(department)) approvals.set(department, item);
@@ -1022,7 +1022,7 @@
 
             try {
                 const newHistoryEntry = {
-                    action: actionType === 'approve' ? 'Approved & Forwarded' : 'Rejected',
+                    action: actionType === 'approve' ? 'Approved' : 'Rejected',
                     userRole: currentRole,
                     userName: currentUser?.profile?.name || currentUser?.username || currentRole,
                     userDepartment: currentUser?.profile?.department || currentRole,
@@ -1083,6 +1083,40 @@
             window.open(documentItem.attachmentDataUrl, '_blank', 'noopener,noreferrer');
         };
 
+        window.deleteDocument = async (id) => {
+            const documentItem = invoicesData.find(item => item.id === id);
+            if (!documentItem) return;
+            if (!window.confirm(`Delete ${documentItem.type || 'document'} ${documentItem.invoiceNumber}? You can upload a replacement afterwards.`)) return;
+
+            try {
+                if (useSupabase) {
+                    let { error } = await supabase
+                        .from(invoicesTable)
+                        .delete()
+                        .eq(getDbKey('id'), id);
+
+                    if (error && isMissingColumnError(error) && activeFieldMap === supabaseFieldMaps[0]) {
+                        switchFieldMap();
+                        ({ error } = await supabase
+                            .from(invoicesTable)
+                            .delete()
+                            .eq(getDbKey('id'), id));
+                    }
+
+                    if (error) throw error;
+                }
+
+                invoicesData = invoicesData.filter(item => item.id !== id);
+                offlineSaveInvoices(invoicesData);
+                renderDashboard();
+                if (!document.getElementById('view-tasks').classList.contains('hidden')) renderTasks();
+                showToast('Document deleted. You can upload a replacement.', 'success');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Unable to delete the document.', 'error');
+            }
+        };
+
         function renderDashboard() {
             const tbody = document.getElementById('dashboardTableBody');
             const poGroups = new Map(Object.keys(samplePurchaseOrders).map(poNumber => [poNumber, []]));
@@ -1108,7 +1142,7 @@
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-slate-100 text-slate-600';
                 const attachedDocuments = documents.length
-                    ? documents.map(item => `<div class="flex items-center gap-2 mb-1 last:mb-0"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200 text-xs">${item.type}</span><span class="text-xs text-slate-600">${item.invoiceNumber}</span><button onclick="previewDocument('${item.id}')" class="text-brand-600 hover:text-brand-800 text-xs font-medium" ${item.attachmentDataUrl ? '' : 'disabled'}><i class="ph ph-eye"></i> Preview</button></div>`).join('')
+                    ? documents.map(item => `<div class="flex items-center gap-2 mb-1 last:mb-0"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200 text-xs">${item.type}</span><span class="text-xs text-slate-600">${item.invoiceNumber}</span><button type="button" onclick="previewDocument('${item.id}')" class="text-brand-600 hover:text-brand-800 disabled:text-slate-300" ${item.attachmentDataUrl ? '' : 'disabled'} aria-label="Preview ${item.invoiceNumber}" title="Preview"><i class="ph ph-eye"></i></button><button type="button" onclick="deleteDocument('${item.id}')" class="text-slate-400 hover:text-red-600" aria-label="Delete ${item.invoiceNumber}" title="Delete"><i class="ph ph-x"></i></button></div>`).join('')
                     : '<span class="text-sm text-slate-400">None yet</span>';
 
                 return `<tr>
@@ -1215,7 +1249,7 @@
                     <div class="relative pl-6">
                         <div class="absolute -left-2 top-1.5 w-4 h-4 rounded-full border-2 border-white ${isFirst ? 'bg-brand-500' : 'bg-slate-300'} z-10"></div>
                         <div class="mb-1 flex justify-between items-center">
-                            <h5 class="text-sm font-bold text-slate-800">${item.action}</h5>
+                            <h5 class="text-sm font-bold text-slate-800">${item.action === 'Approved & Forwarded' ? 'Approved' : item.action === 'Document Uploaded & Digitized' ? 'Document Uploaded' : item.action}</h5>
                             <span class="text-xs text-slate-400 font-mono">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
                         <p class="text-xs text-brand-600 font-medium mb-1"><i class="ph ph-user"></i> ${item.userName || item.userRole || 'Unknown'}${item.userDepartment ? ` · ${item.userDepartment}` : item.userRole ? ` · ${item.userRole}` : ''}</p>
