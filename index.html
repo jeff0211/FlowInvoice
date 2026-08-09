@@ -183,8 +183,19 @@
                 <h2 id="pageTitle" class="text-xl font-bold text-slate-800">Dashboard</h2>
                 <div class="flex items-center gap-4">
                     <div class="relative">
-                        <i class="ph ph-bell text-2xl text-slate-400 hover:text-slate-600 cursor-pointer"></i>
+                        <button id="notificationBell" type="button" onclick="toggleTaskNotification()" aria-label="Read pending task notification" aria-expanded="false" title="Read pending task notification" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <i class="ph ph-bell text-2xl"></i>
+                        </button>
                         <span id="bellBadge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full hidden border-2 border-white"></span>
+                        <div id="taskNotificationPanel" class="absolute right-0 top-10 z-20 hidden w-72 rounded-lg border border-slate-200 bg-white p-4 shadow-xl">
+                            <div class="flex items-start gap-3">
+                                <i class="ph ph-check-square text-xl text-brand-600"></i>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-800">Pending task</p>
+                                    <p id="taskNotificationMessage" class="mt-1 text-sm text-slate-500"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -197,19 +208,19 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-blue-50 text-blue-600 rounded-lg"><i class="ph ph-files text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">PO</p><p id="statTotal" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">PO Pending</p><p id="statTotal" class="text-2xl font-bold">0</p></div>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i class="ph ph-hourglass-high text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">Invoices Pending</p><p id="statPending" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Inv Pending</p><p id="statPending" class="text-2xl font-bold">0</p></div>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i class="ph ph-check-circle text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">Invoices Approved</p><p id="statApproved" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Approved</p><p id="statApproved" class="text-2xl font-bold">0</p></div>
                         </div>
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                             <div class="p-3 bg-red-50 text-red-600 rounded-lg"><i class="ph ph-warning-circle text-2xl"></i></div>
-                            <div><p class="text-sm text-slate-500 font-medium">Invoices Rejected</p><p id="statRejected" class="text-2xl font-bold">0</p></div>
+                            <div><p class="text-sm text-slate-500 font-medium">Rejected</p><p id="statRejected" class="text-2xl font-bold">0</p></div>
                         </div>
                     </div>
 
@@ -452,6 +463,7 @@
         let invoicesData = [];
         let selectedInvoiceFile = null;
         let currentUser = null;
+        let taskNotificationReadKey = '';
 
         const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://mhdwsqzmylsubfacmjmy.supabase.co';
         const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZHdzcXpteWxzdWJmYWNtam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDY1OTgsImV4cCI6MjEwMDg4MjU5OH0.zo8fTzeEO1wDMA2yp3ZhWMGgF0cl67gSz_ZZGp6puMY';
@@ -617,6 +629,7 @@
 
         const getOverviewStatus = (invoiceItems) => {
             if (!invoiceItems.length) return 'Pending Inv';
+            if (invoiceItems.some(item => item.status?.includes('Rejected'))) return 'Rejected';
             return invoiceItems.every(item => item.currentLocation === 'Completed') ? 'Approved' : 'Pending Verify';
         };
 
@@ -657,6 +670,11 @@
 
             if (status === 'Approved') {
                 showModal('Approved', `The invoice for <b>${poNumber}</b> is approved for payment. Please proceed.`, 'success');
+                return;
+            }
+
+            if (status === 'Rejected') {
+                showModal('Rejected', `The invoice for <b>${poNumber}</b> was rejected and requires review.`, 'error');
                 return;
             }
 
@@ -900,6 +918,43 @@
             if(tabId === 'tasks') renderTasks();
         };
 
+        const getMyTasks = () => invoicesData.filter(inv => {
+            if (!isInvoiceDocument(inv)) return false;
+            if (inv.status?.includes('Rejected')) return false;
+            if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
+                return inv.pendingVerificationUsers.includes(currentUser?.username);
+            }
+            if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
+                return inv.pendingVerificationDepartments.includes(currentRole);
+            }
+            return inv.currentLocation === currentRole && inv.currentLocation !== 'Completed';
+        });
+
+        window.toggleTaskNotification = () => {
+            const myTasks = getMyTasks();
+            const panel = document.getElementById('taskNotificationPanel');
+            const bellButton = document.getElementById('notificationBell');
+            const isOpen = !panel.classList.contains('hidden');
+
+            if (isOpen) {
+                panel.classList.add('hidden');
+                bellButton.setAttribute('aria-expanded', 'false');
+                return;
+            }
+
+            if (myTasks.length === 0) {
+                document.getElementById('taskNotificationMessage').innerText = 'You have no pending tasks in My Tasks.';
+            } else {
+                const taskLabel = myTasks.length === 1 ? 'pending task' : 'pending tasks';
+                document.getElementById('taskNotificationMessage').innerText = `You have ${myTasks.length} ${taskLabel} in My Tasks.`;
+                taskNotificationReadKey = myTasks.map(task => task.id).sort().join('|');
+                document.getElementById('bellBadge').classList.add('hidden');
+            }
+
+            panel.classList.remove('hidden');
+            bellButton.setAttribute('aria-expanded', 'true');
+        };
+
         window.chooseInvoiceFile = (source) => {
             const inputId = source === 'camera' ? 'invoiceCameraInput' : 'invoiceFileInput';
             document.getElementById(inputId).click();
@@ -1002,7 +1057,7 @@
                     pendingVerificationDepartments: type === 'Invoice' ? [] : [],
                     pendingVerificationUsers: type === 'Invoice' ? [...verificationUsers] : [],
                     currentLocation: type === 'Invoice' ? verificationUsers[0] : null,
-                    status: type === 'Invoice' ? 'Pending Department Verification' : 'Uploaded',
+                    status: type === 'Invoice' ? 'Pending Verification' : 'Uploaded',
                     uploadDate: new Date().toISOString(),
                     uploadedBy: currentRole,
                     history: [{
@@ -1186,6 +1241,29 @@
             window.open(documentItem.attachmentDataUrl, '_blank', 'noopener,noreferrer');
         };
 
+        window.viewTaskAttachment = (invoiceId, attachmentType) => {
+            const invoice = invoicesData.find(item => item.id === invoiceId);
+            if (!invoice) return;
+
+            const typeAliases = {
+                po: ['PO', 'Purchase Order'],
+                do: ['DO', 'Delivery Order'],
+                others: ['Others', 'Other Supporting Documents', 'Other']
+            };
+            const aliases = typeAliases[attachmentType.toLowerCase()] || [];
+            const attachment = invoicesData.find(item =>
+                item.poNumber === invoice.poNumber && aliases.includes(item.type)
+            );
+
+            if (!attachment) {
+                const labels = { po: 'PO', do: 'DO', others: 'other supporting documents' };
+                showToast(`No attached ${labels[attachmentType.toLowerCase()] || 'document'} found.`, 'info');
+                return;
+            }
+
+            window.previewDocument(attachment.id);
+        };
+
         window.deleteDocument = async (id) => {
             const documentItem = invoicesData.find(item => item.id === id);
             if (!documentItem) return;
@@ -1255,6 +1333,8 @@
                 const status = getOverviewStatus(invoiceItems);
                 const statusClass = status === 'Approved'
                     ? 'bg-emerald-100 text-emerald-700'
+                    : status === 'Rejected'
+                        ? 'bg-red-100 text-red-700'
                     : status === 'Pending Verify'
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-slate-100 text-slate-600';
@@ -1290,21 +1370,13 @@
             container.innerHTML = '';
             
             // Filter invoices requiring current role's action
-            const myTasks = invoicesData.filter(inv => {
-                if (!isInvoiceDocument(inv)) return false;
-                if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
-                    return inv.pendingVerificationUsers.includes(currentUser?.username);
-                }
-                if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
-                    return inv.pendingVerificationDepartments.includes(currentRole);
-                }
-                return inv.currentLocation === currentRole && inv.currentLocation !== 'Completed';
-            });
+            const myTasks = getMyTasks();
+            const taskKey = myTasks.map(task => task.id).sort().join('|');
             
             if (myTasks.length > 0) {
                 badge.innerText = myTasks.length;
                 badge.classList.remove('hidden');
-                bell.classList.remove('hidden');
+                bell.classList.toggle('hidden', taskNotificationReadKey === taskKey);
                 emptyState.classList.add('hidden');
 
                 myTasks.forEach(inv => {
@@ -1313,10 +1385,10 @@
                     
                     // Specific instructions based on role
                     let instructions = "";
-                    if(currentRole === 'Purchasing') instructions = "Action: Cross-check with original PO, verify amounts, and attach supporting DO digitally before approving.";
-                    if(currentRole === 'Machinery') instructions = "Action: Verify vehicle details and policy numbers for this insurance invoice.";
-                    if(currentRole === 'RelevantDepartment') instructions = "Action: Tiered department approval required (Simulated 2-4 personnel matrix).";
-                    if(currentRole === 'Accounts') instructions = "Action: Final verification and process payment to supplier.";
+                    if(currentRole === 'Purchasing') instructions = "Action: Cross-check with original PO, verify amounts, and review the supporting documents before approving.";
+                    if(currentRole === 'Machinery') instructions = "Action: Cross-check with original PO, verify amounts, and review the supporting documents before approving.";
+                    if(currentRole === 'RelevantDepartment') instructions = "Action: Cross-check with original PO, verify amounts, and review the supporting documents before approving.";
+                    if(currentRole === 'Accounts') instructions = "Action: Cross-check with original PO, verify amounts, and review the supporting documents before approving.";
 
                     card.innerHTML = `
                         <div class="absolute top-0 left-0 w-1.5 h-full bg-brand-500"></div>
@@ -1325,22 +1397,22 @@
                                 <h4 class="font-bold text-lg text-slate-800">${inv.invoiceNumber}</h4>
                                 <p class="text-sm text-slate-500">${inv.supplierName} &bull; $${(inv.amount || 0).toFixed(2)}</p>
                             </div>
-                            <span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium animate-pulse border border-amber-200">${inv.status}</span>
+                            <span class="px-2.5 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium animate-pulse border border-amber-200">${inv.status?.toLowerCase().startsWith('pending verification') ? 'Pending Verification' : inv.status}</span>
                         </div>
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-5">
                             <p class="text-xs text-slate-600 font-medium"><i class="ph ph-info text-brand-600 mr-1"></i> ${instructions}</p>
                             
-                            ${currentRole === 'Purchasing' ? `
-                                <div class="mt-2 pt-2 border-t border-slate-200 flex gap-2">
-                                    <button class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-paperclip"></i> Attach PO</button>
-                                    <button class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-paperclip"></i> Attach DO</button>
-                                </div>
-                            ` : ''}
+                            <div class="mt-2 pt-2 border-t border-slate-200 flex flex-wrap gap-2">
+                                <button type="button" onclick="window.previewDocument('${inv.id}')" class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-eye"></i> View Invoice</button>
+                                <button type="button" onclick="viewTaskAttachment('${inv.id}', 'po')" class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-eye"></i> View PO</button>
+                                <button type="button" onclick="viewTaskAttachment('${inv.id}', 'do')" class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-eye"></i> View DO</button>
+                                <button type="button" onclick="viewTaskAttachment('${inv.id}', 'others')" class="text-xs px-2 py-1 bg-white border border-slate-300 rounded hover:bg-slate-100"><i class="ph ph-eye"></i> View Other Supporting Documents</button>
+                            </div>
                         </div>
                         <div class="flex justify-end gap-3">
-                            <button onclick="processInvoice('${inv.id}', 'reject')" class="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors text-sm">Reject / Query</button>
+                            <button onclick="processInvoice('${inv.id}', 'reject')" class="px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors text-sm">Reject</button>
                             <button onclick="processInvoice('${inv.id}', 'approve')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors text-sm shadow-sm flex items-center gap-2">
-                                <i class="ph ph-check-circle"></i> Approve & Forward
+                                <i class="ph ph-check-circle"></i> Approve
                             </button>
                         </div>
                     `;
@@ -1476,22 +1548,14 @@
             if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
             if (!document.getElementById('view-tasks').classList.contains('hidden')) renderTasks();
 
-            const myTasks = invoicesData.filter(inv => {
-                if (!isInvoiceDocument(inv)) return false;
-                if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
-                    return inv.pendingVerificationUsers.includes(currentUser?.username);
-                }
-                if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
-                    return inv.pendingVerificationDepartments.includes(currentRole);
-                }
-                return inv.currentLocation === currentRole && inv.currentLocation !== 'Completed';
-            });
+            const myTasks = getMyTasks();
+            const taskKey = myTasks.map(task => task.id).sort().join('|');
             const badge = document.getElementById('taskCountBadge');
             const bell = document.getElementById('bellBadge');
             if (myTasks.length > 0) {
                 badge.innerText = myTasks.length;
                 badge.classList.remove('hidden');
-                bell.classList.remove('hidden');
+                bell.classList.toggle('hidden', taskNotificationReadKey === taskKey);
             } else {
                 badge.classList.add('hidden');
                 bell.classList.add('hidden');
