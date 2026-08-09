@@ -42,6 +42,29 @@
         .modal-leave { opacity: 1; transform: scale(1); }
         .modal-leave-active { opacity: 0; transform: scale(0.95); transition: opacity 150ms ease-in, transform 150ms ease-in; }
 
+        .upload-select-wrap { position: relative; }
+        .upload-select,
+        .upload-select-summary {
+            min-height: 2.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #334155;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            transition: border-color 150ms ease, box-shadow 150ms ease;
+        }
+        .upload-select { appearance: none; padding: 0.625rem 2.5rem 0.625rem 1rem; }
+        .upload-select-summary { padding: 0.625rem 2.5rem 0.625rem 1rem; }
+        .upload-select-wrap > .ph-caret-down { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; }
+        .upload-select:focus,
+        .upload-select-summary:focus,
+        #verificationDepartmentDropdown[open] .upload-select-summary {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgb(14 165 233 / 0.2);
+            outline: none;
+        }
+
         #sidebar.sidebar-collapsed { width: 5rem; }
         #sidebar.sidebar-collapsed .sidebar-brand,
         #sidebar.sidebar-collapsed .sidebar-section,
@@ -191,20 +214,34 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div class="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50">
                             <h3 class="font-bold text-slate-800">Overview</h3>
-                            <button onclick="fetchInvoices()" class="text-slate-400 hover:text-brand-600 transition-colors"><i class="ph ph-arrows-clockwise text-xl"></i></button>
+                            <div class="flex items-center gap-3">
+                                <label class="relative block w-full sm:w-72" for="overviewSearch">
+                                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input id="overviewSearch" type="search" oninput="renderDashboard()" class="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-200" placeholder="Search PO, supplier, invoice..." aria-label="Search purchase orders">
+                                </label>
+                                <button onclick="fetchInvoices()" class="shrink-0 text-slate-400 hover:text-brand-600 transition-colors" aria-label="Refresh overview" title="Refresh overview"><i class="ph ph-arrows-clockwise text-xl"></i></button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
+                            <table class="w-full min-w-[960px] table-fixed text-left text-sm">
+                                <colgroup>
+                                    <col class="w-[14%]">
+                                    <col class="w-[16%]">
+                                    <col class="w-[30%]">
+                                    <col class="w-[15%]">
+                                    <col class="w-[14%]">
+                                    <col class="w-[11%]">
+                                </colgroup>
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th class="px-6 py-4 font-semibold">PO No.</th>
-                                        <th class="px-6 py-4 font-semibold">Supplier</th>
-                                        <th class="px-6 py-4 font-semibold">Attachments</th>
-                                        <th class="px-6 py-4 font-semibold">Total Amt</th>
-                                        <th class="px-6 py-4 font-semibold">Status</th>
-                                        <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                        <th class="px-4 py-4 font-semibold">PO No.</th>
+                                        <th class="px-4 py-4 font-semibold">Supplier</th>
+                                        <th class="px-4 py-4 font-semibold">Attachments</th>
+                                        <th class="px-4 py-4 font-semibold">Total Amt (RM)</th>
+                                        <th class="px-4 py-4 font-semibold">Status</th>
+                                        <th class="px-4 py-4 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="dashboardTableBody" class="divide-y divide-slate-100">
@@ -228,11 +265,14 @@
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="col-span-2 md:col-span-1">
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Document Type *</label>
-                                    <select id="upType" required onchange="updateVerificationDepartmentState()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                    <div class="upload-select-wrap">
+                                        <select id="upType" required onchange="updateVerificationDepartmentState()" class="upload-select w-full">
                                         <option value="Invoice">Invoice</option>
                                         <option value="Delivery Order">Delivery Order</option>
                                         <option value="Others">Others</option>
-                                    </select>
+                                        </select>
+                                        <i class="ph ph-caret-down"></i>
+                                    </div>
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Document No. *</label>
@@ -240,12 +280,15 @@
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">PO Number *</label>
-                                    <select id="upPoNumber" required onchange="updateUploadSupplier()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                    <div class="upload-select-wrap">
+                                        <select id="upPoNumber" required onchange="updateUploadSupplier()" class="upload-select w-full">
                                         <option value="">Select PO number</option>
                                         <option value="PO2026001">PO2026001</option>
                                         <option value="PO2026002">PO2026002</option>
                                         <option value="PO2026003">PO2026003</option>
-                                    </select>
+                                        </select>
+                                        <i class="ph ph-caret-down"></i>
+                                    </div>
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
                                     <label class="block text-sm font-semibold text-slate-700 mb-2" for="upSupplier">Supplier Name</label>
@@ -256,17 +299,14 @@
                                     <input type="number" id="upAmount" min="0" step="0.01" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all" placeholder="0.00">
                                 </div>
                                 <div class="col-span-2 md:col-span-1">
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="upVerificationDepartment">Verification Department</span></label>
-                                    <details id="verificationDepartmentDropdown" class="relative">
-                                        <summary id="verificationDepartmentSummary" class="flex items-center justify-between w-full px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-500 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                                            <span>Select department(s)</span><i class="ph ph-caret-down"></i>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="upVerificationPerson">Verification Person</label>
+                                    <details id="verificationDepartmentDropdown" class="upload-select-wrap">
+                                        <summary id="verificationDepartmentSummary" class="upload-select-summary flex items-center justify-between w-full text-slate-500 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                                            <span>Select person(s)</span>
                                         </summary>
+                                        <i class="ph ph-caret-down"></i>
                                         <div id="verificationDepartmentOptions" class="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                                            <label class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="Account" onchange="updateVerificationDepartmentState()" class="verification-department-option accent-sky-600"><span>Account</span></label>
-                                            <label class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="Purchasing" onchange="updateVerificationDepartmentState()" class="verification-department-option accent-sky-600"><span>Purchasing</span></label>
-                                            <label class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="Machinery" onchange="updateVerificationDepartmentState()" class="verification-department-option accent-sky-600"><span>Machinery</span></label>
-                                            <label class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="Operation" onchange="updateVerificationDepartmentState()" class="verification-department-option accent-sky-600"><span>Operation</span></label>
-                                            <label class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="Others" onchange="updateVerificationDepartmentState()" class="verification-department-option accent-sky-600"><span>Others</span></label>
+                                            <div id="verificationPersonOptions"></div>
                                         </div>
                                     </details>
                                 </div>
@@ -309,7 +349,7 @@
                     <div class="mb-6 flex justify-between items-end">
                         <div>
                             <h3 class="text-xl font-bold text-slate-800">My Action Required</h3>
-                            <p class="text-slate-500 text-sm mt-1">Invoices pending verification by the <span id="taskRoleHighlight" class="font-bold text-brand-600"></span> department.</p>
+                            <p class="text-slate-500 text-sm mt-1">Invoices assigned to <span id="taskRoleHighlight" class="font-bold text-brand-600"></span>.</p>
                         </div>
                     </div>
 
@@ -491,23 +531,35 @@
             document.getElementById('upSupplier').value = samplePurchaseOrders[poNumber] || '';
         };
 
-        const getSelectedVerificationDepartments = () => Array.from(document.querySelectorAll('.verification-department-option:checked'))
+        const getSelectedVerificationUsers = () => Array.from(document.querySelectorAll('.verification-person-option:checked'))
             .map(option => option.value);
 
         window.updateVerificationDepartmentState = () => {
             const dropdown = document.getElementById('verificationDepartmentDropdown');
             const summary = document.getElementById('verificationDepartmentSummary');
-            const options = document.querySelectorAll('.verification-department-option');
             const isInvoice = document.getElementById('upType').value === 'Invoice';
+            const selectedUsers = getSelectedVerificationUsers();
+            const optionsContainer = document.getElementById('verificationPersonOptions');
+
+            if (!optionsContainer.children.length || optionsContainer.dataset.accountVersion !== String(loadLocalAccounts().length)) {
+                optionsContainer.innerHTML = getVerificationUsers().map(user => `<label class="flex items-start gap-3 rounded-md px-3 py-2 hover:bg-slate-50 cursor-pointer"><input type="checkbox" value="${user.username}" onchange="updateVerificationDepartmentState()" class="verification-person-option accent-sky-600"><span><span class="block text-sm text-slate-700">${user.name}</span><span class="block text-xs text-slate-400">${user.username} · ${user.department}</span></span></label>`).join('') || '<p class="px-3 py-2 text-sm text-slate-400">No registered users available.</p>';
+                optionsContainer.dataset.accountVersion = String(loadLocalAccounts().length);
+                selectedUsers.forEach(username => {
+                    const option = optionsContainer.querySelector(`input[value="${username}"]`);
+                    if (option) option.checked = true;
+                });
+            }
+            const options = document.querySelectorAll('.verification-person-option');
 
             options.forEach(option => { option.disabled = !isInvoice; });
             dropdown.classList.toggle('pointer-events-none', !isInvoice);
             dropdown.classList.toggle('opacity-60', !isInvoice);
             if (!isInvoice) options.forEach(option => { option.checked = false; });
-            const selectedDepartments = getSelectedVerificationDepartments();
-            summary.querySelector('span').innerText = selectedDepartments.length
-                ? selectedDepartments.join(', ')
-                : 'Select department(s)';
+            const selectedVerificationUsers = getSelectedVerificationUsers();
+            if (!isInvoice || selectedVerificationUsers.length === 0) dropdown.open = false;
+            summary.querySelector('span').innerText = selectedVerificationUsers.length
+                ? selectedVerificationUsers.map(displayVerificationUser).join(', ')
+                : 'Select person(s)';
         };
 
         const offlineLoadInvoices = () => {
@@ -534,14 +586,22 @@
 
         const ensureInvoiceHistory = (invoice) => {
             const history = Array.isArray(invoice.history) ? invoice.history : [];
-            const latestQueueState = [...history].reverse().find(item => Array.isArray(item.pendingVerificationDepartments));
+            const latestQueueState = [...history].reverse().find(item => Array.isArray(item.pendingVerificationUsers) || Array.isArray(item.pendingVerificationDepartments));
             return {
                 ...invoice,
                 history,
-                verificationDepartments: invoice.verificationDepartments || latestQueueState?.verificationDepartments || [],
+                verificationDepartments: Array.isArray(invoice.verificationDepartments) && invoice.verificationDepartments.length
+                    ? invoice.verificationDepartments
+                    : latestQueueState?.verificationDepartments || [],
+                verificationUsers: Array.isArray(invoice.verificationUsers) && invoice.verificationUsers.length
+                    ? invoice.verificationUsers
+                    : latestQueueState?.verificationUsers || [],
                 pendingVerificationDepartments: Array.isArray(invoice.pendingVerificationDepartments)
                     ? invoice.pendingVerificationDepartments
-                    : latestQueueState?.pendingVerificationDepartments || []
+                    : latestQueueState?.pendingVerificationDepartments || [],
+                pendingVerificationUsers: Array.isArray(invoice.pendingVerificationUsers) && invoice.pendingVerificationUsers.length
+                    ? invoice.pendingVerificationUsers
+                    : latestQueueState?.pendingVerificationUsers || []
             };
         };
         const isInvoiceDocument = (documentItem) => documentItem?.type?.toLowerCase() === 'invoice';
@@ -556,25 +616,31 @@
             .sort((first, second) => new Date(second.timestamp) - new Date(first.timestamp));
 
         const getOverviewStatus = (invoiceItems) => {
-            if (!invoiceItems.length) return 'Pending Inv Upload';
-            return invoiceItems.every(item => item.currentLocation === 'Completed') ? 'Approved' : 'Pending Dept Verify';
+            if (!invoiceItems.length) return 'Pending Inv';
+            return invoiceItems.every(item => item.currentLocation === 'Completed') ? 'Approved' : 'Pending Verify';
         };
 
         const getInvoiceApprovalDetails = (invoiceItems) => {
+            const requiredUsers = [...new Set(invoiceItems.flatMap(item => item.verificationUsers || []))];
             const requiredDepartments = [...new Set(invoiceItems.flatMap(item => item.verificationDepartments || []))];
+            const personMode = requiredUsers.length > 0;
             const approvals = new Map();
             invoiceItems.flatMap(item => Array.isArray(item.history) ? item.history : [])
                 .filter(item => (item.action === 'Approved' || item.action === 'Approved & Forwarded') && item.documentType === 'Invoice')
                 .forEach(item => {
-                    const department = displayDepartmentForRole(item.userDepartment || item.userRole);
-                    if (department && !approvals.has(department)) approvals.set(department, item);
+                    const assignee = personMode
+                        ? item.userUsername || item.userName || item.userRole
+                        : displayDepartmentForRole(item.userDepartment || item.userRole);
+                    if (assignee && !approvals.has(assignee)) approvals.set(assignee, item);
                 });
-            const completedDepartments = [...approvals.keys()];
+            const completedUsers = personMode ? [...approvals.keys()] : [];
+            const completedDepartments = personMode ? [] : [...approvals.keys()];
             return {
+                personMode,
+                completedUsers,
+                pendingUsers: requiredUsers.filter(username => !completedUsers.includes(username)),
                 completedDepartments,
-                pendingDepartments: requiredDepartments
-                    .map(displayDepartmentForRole)
-                    .filter(department => !completedDepartments.includes(department)),
+                pendingDepartments: requiredDepartments.map(displayDepartmentForRole).filter(department => !completedDepartments.includes(department)),
                 approvals
             };
         };
@@ -584,8 +650,8 @@
             const invoiceItems = documents.filter(isInvoiceDocument);
             const status = getOverviewStatus(invoiceItems);
 
-            if (status === 'Pending Inv Upload') {
-                showModal('Pending Inv Upload', `Please upload the relevant invoice for <b>${poNumber}</b> to start the verification process.`, 'info');
+            if (status === 'Pending Inv') {
+                showModal('Pending Inv', `Please upload the relevant invoice for <b>${poNumber}</b> to start the verification process.`, 'info');
                 return;
             }
 
@@ -595,17 +661,25 @@
             }
 
             const details = getInvoiceApprovalDetails(invoiceItems);
-            const completed = details.completedDepartments.length
-                ? details.completedDepartments.map(department => {
-                    const approval = details.approvals.get(department);
+            const completed = details.personMode && details.completedUsers.length
+                ? details.completedUsers.map(username => {
+                    const approval = details.approvals.get(username);
                     const approvedAt = new Date(approval.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
-                    return `<li><b>${department}</b> approved by ${approval.userName || approval.userRole || 'Unknown'} on ${approvedAt}</li>`;
+                    return `<li><b>${displayVerificationUser(username)}</b> approved on ${approvedAt}</li>`;
                 }).join('')
-                : '<li>No department approvals recorded yet.</li>';
-            const pending = details.pendingDepartments.length
-                ? details.pendingDepartments.map(department => `<li><b>${department}</b> has not completed verification.</li>`).join('')
-                : '<li>Department verification records are still being updated.</li>';
-            showModal('Pending Dept Verify', `<p class="mb-3">Department verification is not complete for <b>${poNumber}</b>.</p><p class="font-semibold text-emerald-700 mb-1">Approved</p><ul class="list-disc pl-5 mb-3">${completed}</ul><p class="font-semibold text-amber-700 mb-1">Pending</p><ul class="list-disc pl-5">${pending}</ul>`, 'info');
+                : !details.personMode && details.completedDepartments.length
+                    ? details.completedDepartments.map(department => {
+                        const approval = details.approvals.get(department);
+                        const approvedAt = new Date(approval.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                        return `<li><b>${department}</b> approved by ${approval.userName || approval.userRole || 'Unknown'} on ${approvedAt}</li>`;
+                    }).join('')
+                    : '<li>No verification people have approved yet.</li>';
+            const pending = details.personMode && details.pendingUsers.length
+                ? details.pendingUsers.map(username => `<li><b>${displayVerificationUser(username)}</b> has not completed verification.</li>`).join('')
+                : !details.personMode && details.pendingDepartments.length
+                    ? details.pendingDepartments.map(department => `<li><b>${department}</b> has not completed verification.</li>`).join('')
+                    : '<li>Verification records are still being updated.</li>';
+            showModal('Pending Person Verify', `<p class="mb-3">Person verification is not complete for <b>${poNumber}</b>.</p><p class="font-semibold text-emerald-700 mb-1">Approved</p><ul class="list-disc pl-5 mb-3">${completed}</ul><p class="font-semibold text-amber-700 mb-1">Pending</p><ul class="list-disc pl-5">${pending}</ul>`, 'info');
         };
 
         const accountsStorageKey = 'flowinvoice_local_accounts';
@@ -617,6 +691,17 @@
         };
 
         const saveLocalAccounts = (accounts) => localStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
+
+        const getVerificationUsers = () => loadLocalAccounts()
+            .filter(account => account.username)
+            .map(account => ({
+                username: account.username,
+                name: account.profile?.name || account.username,
+                department: account.profile?.department || 'Department not set',
+                role: account.profile?.role || 'Role not set'
+            }));
+        const getVerificationUser = (username) => getVerificationUsers().find(user => user.username === username);
+        const displayVerificationUser = (username) => getVerificationUser(username)?.name || username;
 
         const workflowRoleForDepartment = (department) => {
             if (department === 'Account' || department === 'Accounts') return 'Accounts';
@@ -867,16 +952,16 @@
             const amount = document.getElementById('upAmount').value;
             const poNumber = document.getElementById('upPoNumber').value.trim();
             const supplier = document.getElementById('upSupplier').value.trim() || samplePurchaseOrders[poNumber] || 'PO system pending';
-            const selectedVerificationDepartments = getSelectedVerificationDepartments();
-            const verificationDepartments = selectedVerificationDepartments.map(workflowRoleForDepartment);
+            const selectedVerificationUsers = getSelectedVerificationUsers();
+            const verificationUsers = [...new Set(selectedVerificationUsers)];
 
             if (!selectedInvoiceFile) {
                 showToast('Please browse for an invoice file or take a picture first.', 'error');
                 return;
             }
 
-            if (type === 'Invoice' && verificationDepartments.length === 0) {
-                showToast('Please select at least one verification department for this invoice.', 'error');
+            if (type === 'Invoice' && verificationUsers.length === 0) {
+                showToast('Please select at least one verification person for this invoice.', 'error');
                 return;
             }
 
@@ -912,21 +997,25 @@
                     attachmentName: selectedInvoiceFile.name,
                     attachmentSource: selectedInvoiceFile.source,
                     attachmentDataUrl: selectedInvoiceFile.dataUrl,
-                    verificationDepartments: type === 'Invoice' ? verificationDepartments : [],
-                    pendingVerificationDepartments: type === 'Invoice' ? [...new Set(verificationDepartments)] : [],
-                    currentLocation: type === 'Invoice' ? verificationDepartments[0] : null,
+                    verificationDepartments: type === 'Invoice' ? verificationUsers.map(username => getVerificationUser(username)?.department || 'Department not set') : [],
+                    verificationUsers: type === 'Invoice' ? verificationUsers : [],
+                    pendingVerificationDepartments: type === 'Invoice' ? [] : [],
+                    pendingVerificationUsers: type === 'Invoice' ? [...verificationUsers] : [],
+                    currentLocation: type === 'Invoice' ? verificationUsers[0] : null,
                     status: type === 'Invoice' ? 'Pending Department Verification' : 'Uploaded',
                     uploadDate: new Date().toISOString(),
                     uploadedBy: currentRole,
                     history: [{
                         action: 'Document Uploaded',
                         userRole: currentRole,
+                        userUsername: currentUser?.username,
                         userName: currentUser?.profile?.name || currentUser?.username || currentRole,
                         userDepartment: currentUser?.profile?.department || currentRole,
                         timestamp: new Date().toISOString(),
                         documentType: type,
-                        verificationDepartments: type === 'Invoice' ? verificationDepartments : [],
-                        pendingVerificationDepartments: type === 'Invoice' ? [...new Set(verificationDepartments)] : [],
+                        verificationDepartments: type === 'Invoice' ? verificationUsers.map(username => getVerificationUser(username)?.department || 'Department not set') : [],
+                        verificationUsers: type === 'Invoice' ? verificationUsers : [],
+                        pendingVerificationUsers: type === 'Invoice' ? [...verificationUsers] : [],
                         note: `PO ${poNumber} - ${selectedInvoiceFile.name} (${selectedInvoiceFile.source === 'camera' ? 'camera capture' : 'local file'})`
                     }]
                 };
@@ -981,7 +1070,18 @@
             let actionNote = '';
 
             if (actionType === 'approve') {
-                if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
+                if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
+                    inv.pendingVerificationUsers = inv.pendingVerificationUsers.filter(username => username !== currentUser?.username);
+                    if (inv.pendingVerificationUsers.length > 0) {
+                        newLocation = inv.pendingVerificationUsers[0];
+                        newStatus = `Pending verification: ${inv.pendingVerificationUsers.map(displayVerificationUser).join(', ')}`;
+                        actionNote = `${currentUser?.profile?.name || currentUser?.username} verification completed. Remaining people: ${inv.pendingVerificationUsers.map(displayVerificationUser).join(', ')}.`;
+                    } else {
+                        newLocation = 'Completed';
+                        newStatus = 'Approved & Paid';
+                        actionNote = 'All selected verification people completed verification. Ready for payment.';
+                    }
+                } else if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
                     inv.pendingVerificationDepartments = inv.pendingVerificationDepartments.filter(department => department !== currentRole);
                     if (inv.pendingVerificationDepartments.length > 0) {
                         newLocation = inv.pendingVerificationDepartments[0];
@@ -1024,13 +1124,16 @@
                 const newHistoryEntry = {
                     action: actionType === 'approve' ? 'Approved' : 'Rejected',
                     userRole: currentRole,
+                    userUsername: currentUser?.username,
                     userName: currentUser?.profile?.name || currentUser?.username || currentRole,
                     userDepartment: currentUser?.profile?.department || currentRole,
                     timestamp: new Date().toISOString(),
                     documentType: 'Invoice',
                         note: actionNote,
                         verificationDepartments: inv.verificationDepartments || [],
-                        pendingVerificationDepartments: inv.pendingVerificationDepartments || []
+                        pendingVerificationDepartments: inv.pendingVerificationDepartments || [],
+                        verificationUsers: inv.verificationUsers || [],
+                        pendingVerificationUsers: inv.pendingVerificationUsers || []
                 };
 
                 inv.currentLocation = newLocation;
@@ -1117,6 +1220,12 @@
             }
         };
 
+        const compactDocumentType = (type) => ({
+            Invoice: 'INV',
+            'Delivery Order': 'DO',
+            Others: 'ETC'
+        }[type] || type);
+
         function renderDashboard() {
             const tbody = document.getElementById('dashboardTableBody');
             const poGroups = new Map(Object.keys(samplePurchaseOrders).map(poNumber => [poNumber, []]));
@@ -1127,40 +1236,49 @@
             });
 
             const groups = [...poGroups.entries()];
+            const searchTerm = document.getElementById('overviewSearch')?.value.trim().toLowerCase() || '';
+            const filteredGroups = searchTerm
+                ? groups.filter(([poNumber, documents]) => {
+                    const supplier = documents.find(item => item.supplierName && item.supplierName !== 'PO system pending')?.supplierName || samplePurchaseOrders[poNumber] || '';
+                    const searchableValues = [poNumber, supplier, ...documents.map(item => item.invoiceNumber || '')];
+                    return searchableValues.some(value => String(value).toLowerCase().includes(searchTerm));
+                })
+                : groups;
             const invoiceDocuments = invoicesData.filter(isInvoiceDocument);
             const approvedDocuments = invoiceDocuments.filter(item => item.currentLocation === 'Completed').length;
             const rejectedDocuments = invoiceDocuments.filter(item => item.status?.includes('Rejected')).length;
             const pendingDocuments = invoiceDocuments.filter(item => item.currentLocation !== 'Completed' && !item.status?.includes('Rejected')).length;
-            const documentRows = groups.map(([poNumber, documents]) => {
+            const documentRows = filteredGroups.map(([poNumber, documents]) => {
                 const amount = documents.reduce((total, item) => total + (Number(item.amount) || 0), 0);
                 const supplier = documents.find(item => item.supplierName && item.supplierName !== 'PO system pending')?.supplierName || samplePurchaseOrders[poNumber] || 'Supplier data pending';
                 const invoiceItems = documents.filter(isInvoiceDocument);
                 const status = getOverviewStatus(invoiceItems);
                 const statusClass = status === 'Approved'
                     ? 'bg-emerald-100 text-emerald-700'
-                    : status === 'Pending Dept Verify'
+                    : status === 'Pending Verify'
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-slate-100 text-slate-600';
                 const attachedDocuments = documents.length
-                    ? documents.map(item => `<div class="flex items-center gap-2 mb-1 last:mb-0"><span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200 text-xs">${item.type}</span><span class="text-xs text-slate-600">${item.invoiceNumber}</span><button type="button" onclick="previewDocument('${item.id}')" class="text-brand-600 hover:text-brand-800 disabled:text-slate-300" ${item.attachmentDataUrl ? '' : 'disabled'} aria-label="Preview ${item.invoiceNumber}" title="Preview"><i class="ph ph-eye"></i></button><button type="button" onclick="deleteDocument('${item.id}')" class="text-slate-400 hover:text-red-600" aria-label="Delete ${item.invoiceNumber}" title="Delete"><i class="ph ph-x"></i></button></div>`).join('')
+                    ? documents.map(item => `<div class="flex items-center gap-2 mb-1 last:mb-0"><span class="inline-flex h-6 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-600">${compactDocumentType(item.type)}</span><span class="text-xs text-slate-600">${item.invoiceNumber}</span><button type="button" onclick="previewDocument('${item.id}')" class="text-brand-600 hover:text-brand-800 disabled:text-slate-300" ${item.attachmentDataUrl ? '' : 'disabled'} aria-label="Preview ${item.invoiceNumber}" title="Preview"><i class="ph ph-eye"></i></button><button type="button" onclick="deleteDocument('${item.id}')" class="text-slate-400 hover:text-red-600" aria-label="Delete ${item.invoiceNumber}" title="Delete"><i class="ph ph-x"></i></button></div>`).join('')
                     : '<span class="text-sm text-slate-400">None yet</span>';
 
                 return `<tr>
-                    <td class="px-6 py-4 font-mono font-medium text-slate-900">${poNumber}</td>
-                    <td class="px-6 py-4 text-slate-600">${supplier}</td>
-                    <td class="px-6 py-4">${attachedDocuments}</td>
-                    <td class="px-6 py-4 font-semibold text-slate-700">RM ${amount.toFixed(2)}</td>
-                    <td class="px-6 py-4"><button type="button" onclick="openOverviewStatus('${poNumber}')" class="px-2.5 py-1 text-xs rounded-full ${statusClass} hover:ring-2 hover:ring-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500" title="View status details">${status}</button></td>
-                    <td class="px-6 py-4 text-right"><button onclick="${documents[0] ? `openAudit('${documents[0].id}')` : `showToast('No audit trail yet.', 'info')`}" class="text-brand-600 hover:text-brand-800 text-sm font-medium hover:underline"><i class="ph ph-clock-counter-clockwise"></i> Audit Trail</button></td>
+                    <td class="px-4 py-4 align-top font-mono font-medium text-slate-900">${poNumber}</td>
+                    <td class="px-4 py-4 align-top text-slate-600">${supplier}</td>
+                    <td class="px-4 py-4 align-top">${attachedDocuments}</td>
+                    <td class="px-4 py-4 align-top font-semibold text-slate-700">${amount.toFixed(2)}</td>
+                    <td class="px-4 py-4 align-top"><button type="button" onclick="openOverviewStatus('${poNumber}')" class="block w-full max-w-[8rem] ${status === 'Approved' ? 'whitespace-nowrap' : 'whitespace-normal break-words'} px-2 py-1 text-center text-xs leading-4 rounded-full ${statusClass} hover:ring-2 hover:ring-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500" title="View status details">${status}</button></td>
+                    <td class="px-4 py-4 align-top text-right"><button onclick="${documents[0] ? `openAudit('${documents[0].id}')` : `showToast('No audit trail yet.', 'info')`}" class="text-brand-600 hover:text-brand-800 text-sm font-medium hover:underline"><i class="ph ph-clock-counter-clockwise"></i> Audit Trail</button></td>
                 </tr>`;
             }).join('');
 
-            tbody.innerHTML = documentRows || '<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">No purchase orders available.</td></tr>';
+            tbody.innerHTML = documentRows || `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">${searchTerm ? 'No purchase orders match your search.' : 'No purchase orders available.'}</td></tr>`;
             document.getElementById('statTotal').innerText = groups.length;
             document.getElementById('statPending').innerText = pendingDocuments;
             document.getElementById('statApproved').innerText = approvedDocuments;
             document.getElementById('statRejected').innerText = rejectedDocuments;
         }
+        window.renderDashboard = renderDashboard;
 
         function renderTasks() {
             const container = document.getElementById('taskListContainer');
@@ -1168,12 +1286,15 @@
             const badge = document.getElementById('taskCountBadge');
             const bell = document.getElementById('bellBadge');
             
-            document.getElementById('taskRoleHighlight').innerText = currentRole;
+            document.getElementById('taskRoleHighlight').innerText = currentUser?.profile?.name || currentUser?.username || currentRole;
             container.innerHTML = '';
             
             // Filter invoices requiring current role's action
             const myTasks = invoicesData.filter(inv => {
                 if (!isInvoiceDocument(inv)) return false;
+                if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
+                    return inv.pendingVerificationUsers.includes(currentUser?.username);
+                }
                 if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
                     return inv.pendingVerificationDepartments.includes(currentRole);
                 }
@@ -1342,9 +1463,9 @@
                     invoicesData = filterExcludedSuppliers(offlineLoadInvoices());
                 } else {
                     const cachedInvoices = offlineLoadInvoices();
-                    invoicesData = filterExcludedSuppliers(data.map(mapFromDb).map(ensureInvoiceHistory).map(item => {
+                    invoicesData = filterExcludedSuppliers(data.map(mapFromDb).map(item => {
                         const cachedItem = cachedInvoices.find(cached => cached.id === item.id) || {};
-                        return { ...cachedItem, ...item };
+                        return ensureInvoiceHistory({ ...cachedItem, ...item });
                     }));
                     offlineSaveInvoices(invoicesData);
                 }
@@ -1357,6 +1478,9 @@
 
             const myTasks = invoicesData.filter(inv => {
                 if (!isInvoiceDocument(inv)) return false;
+                if (Array.isArray(inv.pendingVerificationUsers) && inv.pendingVerificationUsers.length > 0) {
+                    return inv.pendingVerificationUsers.includes(currentUser?.username);
+                }
                 if (Array.isArray(inv.pendingVerificationDepartments) && inv.pendingVerificationDepartments.length > 0) {
                     return inv.pendingVerificationDepartments.includes(currentRole);
                 }
@@ -1377,6 +1501,10 @@
         // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             applySidebarState(localStorage.getItem(sidebarStorageKey) === 'true');
+            document.addEventListener('click', (event) => {
+                const dropdown = document.getElementById('verificationDepartmentDropdown');
+                if (dropdown.open && !dropdown.contains(event.target)) dropdown.open = false;
+            });
             updateVerificationDepartmentState();
             if (!useSupabase) {
                 showToast('Supabase is not configured yet. The app will run in local offline mode only.', 'info');
