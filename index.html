@@ -247,11 +247,11 @@
                                 </colgroup>
                                 <thead class="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th class="px-4 py-4 font-semibold">PO No.</th>
-                                        <th class="px-4 py-4 font-semibold">Supplier</th>
+                                        <th class="px-4 py-4 font-semibold"><button type="button" onclick="sortOverview('poNumber')" data-overview-sort="poNumber" class="inline-flex items-center gap-1 hover:text-slate-800" aria-label="Sort by PO number">PO No. <span data-sort-indicator="poNumber" aria-hidden="true"></span></button></th>
+                                        <th class="px-4 py-4 font-semibold"><button type="button" onclick="sortOverview('supplier')" data-overview-sort="supplier" class="inline-flex items-center gap-1 hover:text-slate-800" aria-label="Sort by supplier">Supplier <span data-sort-indicator="supplier" aria-hidden="true"></span></button></th>
                                         <th class="px-4 py-4 font-semibold">Attachments</th>
                                         <th class="px-4 py-4 font-semibold">Total Amt (RM)</th>
-                                        <th class="px-4 py-4 font-semibold">Status</th>
+                                        <th class="px-4 py-4 font-semibold"><button type="button" onclick="sortOverview('status')" data-overview-sort="status" class="inline-flex items-center gap-1 hover:text-slate-800" aria-label="Sort by status">Status <span data-sort-indicator="status" aria-hidden="true"></span></button></th>
                                         <th class="px-4 py-4 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -464,6 +464,7 @@
         let selectedInvoiceFile = null;
         let currentUser = null;
         let taskNotificationReadKey = '';
+        let overviewSort = { key: null, direction: null };
 
         const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://mhdwsqzmylsubfacmjmy.supabase.co';
         const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZHdzcXpteWxzdWJmYWNtam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDY1OTgsImV4cCI6MjEwMDg4MjU5OH0.zo8fTzeEO1wDMA2yp3ZhWMGgF0cl67gSz_ZZGp6puMY';
@@ -1304,6 +1305,17 @@
             Others: 'ETC'
         }[type] || type);
 
+        window.sortOverview = (key) => {
+            if (overviewSort.key !== key) {
+                overviewSort = { key, direction: 'asc' };
+            } else if (overviewSort.direction === 'asc') {
+                overviewSort.direction = 'desc';
+            } else {
+                overviewSort = { key: null, direction: null };
+            }
+            renderDashboard();
+        };
+
         function renderDashboard() {
             const tbody = document.getElementById('dashboardTableBody');
             const poGroups = new Map(Object.keys(samplePurchaseOrders).map(poNumber => [poNumber, []]));
@@ -1322,11 +1334,28 @@
                     return searchableValues.some(value => String(value).toLowerCase().includes(searchTerm));
                 })
                 : groups;
+            const sortValues = {
+                poNumber: ([poNumber]) => poNumber,
+                supplier: ([poNumber, documents]) => documents.find(item => item.supplierName && item.supplierName !== 'PO system pending')?.supplierName || samplePurchaseOrders[poNumber] || 'Supplier data pending',
+                status: ([, documents]) => getOverviewStatus(documents.filter(isInvoiceDocument))
+            };
+            const displayedGroups = overviewSort.key
+                ? [...filteredGroups].sort((first, second) => {
+                    const comparison = String(sortValues[overviewSort.key](first)).localeCompare(String(sortValues[overviewSort.key](second)), undefined, { numeric: true, sensitivity: 'base' });
+                    return overviewSort.direction === 'desc' ? -comparison : comparison;
+                })
+                : filteredGroups;
+            document.querySelectorAll('[data-sort-indicator]').forEach(indicator => {
+                const key = indicator.dataset.sortIndicator;
+                indicator.textContent = overviewSort.key === key
+                    ? (overviewSort.direction === 'asc' ? '↑' : '↓')
+                    : '';
+            });
             const invoiceDocuments = invoicesData.filter(isInvoiceDocument);
             const approvedDocuments = invoiceDocuments.filter(item => item.currentLocation === 'Completed').length;
             const rejectedDocuments = invoiceDocuments.filter(item => item.status?.includes('Rejected')).length;
             const pendingDocuments = invoiceDocuments.filter(item => item.currentLocation !== 'Completed' && !item.status?.includes('Rejected')).length;
-            const documentRows = filteredGroups.map(([poNumber, documents]) => {
+            const documentRows = displayedGroups.map(([poNumber, documents]) => {
                 const amount = documents.reduce((total, item) => total + (Number(item.amount) || 0), 0);
                 const supplier = documents.find(item => item.supplierName && item.supplierName !== 'PO system pending')?.supplierName || samplePurchaseOrders[poNumber] || 'Supplier data pending';
                 const invoiceItems = documents.filter(isInvoiceDocument);
